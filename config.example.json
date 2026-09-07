@@ -1,0 +1,16 @@
+{
+  "country": "US",
+  "timezone": "Asia/Shanghai",
+  "daily_time": "19:00",
+  "engine": "python",
+  "fallback_engine": "playwright",
+  "details": true,
+  "storage_state": null,
+  "delivery": {"country": "US", "postal_code": "10001"},
+  "sources": [
+    {"platform": "amazon", "list": "best_sellers", "url": "https://www.amazon.com/Best-Sellers-Toys-Games/zgbs/toys-and-games", "target": 200},
+    {"platform": "amazon", "list": "new_releases", "url": "https://www.amazon.com/gp/new-releases/toys-and-games", "target": 200}
+  ],
+  "selection_assistant_url": null,
+  "output_directory": "outputs"
+}

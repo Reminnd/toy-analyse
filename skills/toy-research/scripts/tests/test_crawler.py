@@ -1,0 +1,75 @@
+import json
+from pathlib import Path
+import sys
+import tempfile
+import time
+import unittest
+
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+import requests
+from python_crawler import parse_page
+from amazon_detail import parse_detail
+from session_state import load_state
+
+
+class CrawlerTests(unittest.TestCase):
+    def test_embedded_ids_keep_source_rank_without_inventing_title(self):
+        records=[{'id':'B000000031','metadataMap':{'render.zg.rank':'31'}}]
+        html='<div data-client-recs-list=\''+json.dumps(records)+'\'></div>'
+        product=parse_page(html,'https://www.amazon.com/zgbs','amazon','US')['products'][0]
+        self.assertEqual(product['rank'],31)
+        self.assertEqual(product['title'],'')
+        self.assertTrue(product['needs_detail'])
+
+    def test_detail_does_not_use_first_seen_as_listing_date(self):
+        html='''<input id="ASIN" value="B000000001"><span id="productTitle">A toy</span>
+        <div id="productOverview_feature_div"><table><tr><td>Brand</td><td>Example</td></tr></table></div>
+        <span id="social-proofing-faceout-title-tk_bought">1K+ bought in past month</span>
+        <div data-hook="review" id="r1"><div data-hook="reviewRichContentContainer">Not durable</div></div>'''
+        result=parse_detail(html,'https://www.amazon.com/dp/B000000001','B000000001')
+        self.assertEqual(result['brand'],'Example')
+        self.assertIsNone(result['listed_at'])
+        self.assertEqual(result['displayed_sales_message'],'1K+ bought in past month')
+        self.assertEqual(result['reviews'][0]['text'],'Not durable')
+        with self.assertRaises(ValueError): parse_detail(html,'https://www.amazon.com','B000000002')
+
+    def test_snapshot_skips_expired_and_unrelated_cookies_and_respects_path(self):
+        state={'cookies':[
+            {'name':'session','value':'test-session','domain':'.example.com','path':'/private','secure':True,'expires':time.time()+1000},
+            {'name':'expired','value':'old','domain':'.example.com','expires':1},
+            {'name':'unrelated','value':'other','domain':'.elsewhere.com','expires':-1},
+        ]}
+        with tempfile.TemporaryDirectory() as folder:
+            file=Path(folder)/'state.json'
+            file.write_text(json.dumps(state),encoding='utf-8')
+            session=requests.Session()
+            info=load_state(session,file,'https://www.example.com/private')
+            self.assertEqual(info['loaded_cookie_count'],1)
+            self.assertEqual(info['expired_cookie_count'],1)
+            allowed=session.prepare_request(requests.Request('GET','https://www.example.com/private/items'))
+            public=session.prepare_request(requests.Request('GET','https://www.example.com/public'))
+            other=session.prepare_request(requests.Request('GET','https://www.elsewhere.com/private'))
+            insecure=session.prepare_request(requests.Request('GET','http://www.example.com/private'))
+            self.assertEqual(allowed.headers.get('Cookie'),'session=test-session')
+            for request in [public,other,insecure]: self.assertNotIn('Cookie',request.headers)
+
+    def test_detail_reads_explicit_byline_brand_and_aggregate_rating(self):
+        html='''<input id="ASIN" value="B0H7PWTPTV"><span id="productTitle">Coconut Oil Squishy</span>
+        <a id="bylineInfo">Brand: LAVKUHY</a><span id="acrPopover" title="3.6 out of 5 stars"></span>
+        <span id="acrCustomerReviewText">245 ratings</span><div id="productOverview_feature_div"></div>'''
+        result=parse_detail(html,'https://www.amazon.com/dp/B0H7PWTPTV','B0H7PWTPTV')
+        self.assertEqual(result['brand'],'LAVKUHY')
+        self.assertEqual(result['rating'],3.6)
+        self.assertEqual(result['rating_count'],245)
+        self.assertIsNone(result['review_count'])
+        self.assertIsNone(result['listed_at'])
+        result=parse_detail(html.replace('Brand: LAVKUHY','Visit the LAVKUHY Store'),'https://www.amazon.com','B0H7PWTPTV')
+        self.assertIsNone(result['brand'])
+
+    def test_continue_shopping_page_is_reported_as_verification(self):
+        html='<title>Amazon.com</title><form action="/errors_page/validateCaptcha"><button>Continue shopping</button></form>'
+        with self.assertRaisesRegex(ValueError,'继续购物验证页面'):
+            parse_detail(html,'https://www.amazon.com/dp/B09PGVGCH5','B09PGVGCH5')
+
+
+if __name__=='__main__': unittest.main()

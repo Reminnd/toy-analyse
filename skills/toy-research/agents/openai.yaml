@@ -1,0 +1,4 @@
+interface:
+  display_name: "玩具选品研究"
+  short_description: "采集真实玩具榜单，分析评论与趋势，配置 Codex 每日计划"
+  default_prompt: "使用 $toy-research，选择国家与平台，采集玩具榜单并生成选品报告。"
