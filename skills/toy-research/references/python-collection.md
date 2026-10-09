@@ -69,3 +69,9 @@ node scripts/playwright_crawler.mjs --platform amazon --country US --url <same-l
 Python 检出 Amazon 验证表单后停止当前来源的后续请求，包括分页及详情。已经收到的列表仍可解析并保存；`collection_stop` 记录阶段、URL、ASIN（如适用）、错误类型与原因，`next_page` 保留未读分页。失败详情使用 `error` 或 `detail_error`；未请求项使用 `deferred_reason` 或 `detail_deferred_reason`，不能把它们写成已尝试失败。即使尚无完整标题，也保存已声明的ASIN，`coverage.actual=0`，不能当完整采集成功。
 
 用户在正常浏览器完成验证并更新会话后，再用 `--python-result --details` 尝试失败和延后详情。补采结果保留原始停止证据及每次恢复结果；仍需处理的分页不会自动完成。不得仅因有待补项而反复请求同一验证页。本轮实际触发验证的详情 ASIN 为 B00IUAAK2A，当前完整报告已保留缺失。
+
+## 原始榜单卡片恢复（2026-10-09）
+
+当 Python 未取得标题且已确认详情 ASIN 不一致时，`--python-result` 不再重复请求该详情，转为读取原始 `pages` 中的榜单页面并有限滚动。只有卡片 ASIN 与原排名同时一致才合并标题、列表图片和评分；排名变化则保留缺口。恢复记录标记 `scope=list_card`，商品保留详情错误，列表图片仍为 `image_scope=product`，不冒充已验证的SKU图或详情。
+
+美国实站第39名 B0FJ31ZCRB 已经此路径恢复。两榜各100条，共195个不同商品；剩余5个为跨榜重复，不再存在列表标题缺口。详情验证阻塞仍存在，不能把列表恢复称为全部指标已齐全。

@@ -9,19 +9,17 @@
     {
       "name": "Amazon Best Sellers",
       "url": "https://www.amazon.com/Best-Sellers-Toys-Games/zgbs/toys-and-games",
-      "count": 99,
+      "count": 100,
       "target": 100,
       "coverage": {
         "target": 100,
-        "actual": 99,
-        "missing": 1,
+        "actual": 100,
+        "missing": 0,
         "declared_rank_max": 100,
-        "missing_declared_ranks": [
-          39
-        ],
+        "missing_declared_ranks": [],
         "source_range_shortfall": false
       },
-      "note": "Python 页面核对配送 New York 10001。第39名 B0FJ31ZCRB 的详情 ASIN 不一致，Python 与 Playwright 均拒绝合并，仍缺1条。"
+      "note": "Python 页面及浏览器补采核对配送 New York 10001。第39名 B0FJ31ZCRB 已通过原榜单卡片补齐标题、评分和商品图；详情ASIN仍不一致，未合并错变体字段。"
     },
     {
       "name": "Amazon New Releases",
@@ -1384,6 +1382,38 @@
       ],
       "keyword_source": "Codex 根据本轮实际标题提取并翻译；不是搜索量数据",
       "missing_reason": "图片为当前ASIN主图，非全部变体图集"
+    },
+    {
+      "platform": "amazon",
+      "country": "US",
+      "product_id": "B0FJ31ZCRB",
+      "title": "Toniebox 2 Audio Player Disney Bundle for Kids 3+ with Lightning McQueen, Simba, Winnie The Pooh, and Baloo - Sunset Red",
+      "rating": 4.7,
+      "image_url": "https://images-na.ssl-images-amazon.com/images/I/81XfWvyluEL._AC_UL300_SR300,200_.jpg",
+      "image_scope": "product",
+      "collected_at": "2026-10-09T15:30:22.953Z",
+      "id": "amazon:US:B0FJ31ZCRB",
+      "url": "https://www.amazon.com/dp/B0FJ31ZCRB",
+      "brand": null,
+      "displayed_sales_message": null,
+      "sources": [
+        "Amazon Best Sellers"
+      ],
+      "source_ranks": [
+        {
+          "source": "Amazon Best Sellers",
+          "rank": 39
+        }
+      ],
+      "keywords": [
+        {
+          "en": "audio player",
+          "zh": "音频播放器"
+        }
+      ],
+      "keyword_source": "Codex根据原榜单标题提取并翻译；不是搜索量数据",
+      "missing_reason": "原始榜单卡片补齐标题、评分和商品图；详情页ASIN不一致，未合并品牌或销量；图片为列表商品图，未独立验证SKU归属。",
+      "list_card_source": "https://www.amazon.com/Best-Sellers-Toys-Games/zgbs/toys-and-games"
     },
     {
       "platform": "amazon",
@@ -7203,7 +7233,7 @@
       ]
     }
   ],
-  "summary": "本轮仅使用美国 Amazon Toys & Games 的热销榜与新品榜，不增加子类目。两榜声明200条记录、195个不同ASIN；其中热销榜第39名详情切换到另一ASIN，未并入主表。实际取得199条榜单关联、194个有标题的去重商品，距离200个目标差6个：5个来自跨榜重叠，1个来自采集缺口。公开榜单不足和采集失败分别保留。\n\n详情补充在 Amazon 返回验证页后停止。194个商品均有图片和中英关键词；117个取得详情，115个有品牌、190个有评分、106个有销量原文，117张主图有页面ASIN关联。其余为列表图片；未取得卖家内部SKU或全部变体图片。销量如“6K+ bought in past month”保留原文，不换算成日销量或精确月销量。跨榜排名分别展示，不构造合并总榜排名。\n\n采集结果包含1245条去重可见评论，本报告对10个定向商品的20条评论进行语义分析；选取首条及最低/最高星级后去重，属于有意覆盖不同体验的样本，不是随机抽样。正负主题可同时引用一条混合评论，4星评论不自动归为负面。“Thank you”等缺少具体信息的评论不进入主题。词云频次仅表示这20条样本中的主题提及数，不代表市场差评率。部分评论属于其他变体或较早时间，例如旅行磁力片评论标注Original，不将其专属属性直接归到当前Winter Wonder变体。\n\n观察：旅行磁力拼搭和动手学习类样本有便携、易上手及学习体验反馈；感官软捏类同时出现良好触感、异味和破损反馈。推断：可优先打样验证收纳、材料耐用性和实际使用体验。没有成本、利润、广告转化或真实订单数据，不能据榜单与评论宣称盈利。下列建议是待验证方向，并非补充采集来源。",
+  "summary": "本轮仅使用美国 Amazon Toys & Games 的热销榜与新品榜，不增加子类目。两榜各100条，合计200条榜单记录、195个有标题的不同ASIN，距离200个去重商品目标差5个，全部来自跨榜重叠。热销榜第39名的详情页切换到另一ASIN，现已从原榜单卡片补齐标题、评分和商品图；该商品品牌与销量等详情仍保留缺失。用户已确认仅采两榜并接受自然数量缺口。\n\n详情补充在 Amazon 返回验证页后停止。195个商品均有图片和中英关键词；117个取得详情，115个有品牌、191个有评分、106个有销量原文，117张主图有页面ASIN关联。其余为列表图片；未取得卖家内部SKU或全部变体图片。销量如“6K+ bought in past month”保留原文，不换算成日销量或精确月销量。跨榜排名分别展示，不构造合并总榜排名。\n\n采集结果包含1245条去重可见评论，本报告对10个定向商品的20条评论进行语义分析；选取首条及最低/最高星级后去重，属于有意覆盖不同体验的样本，不是随机抽样。正负主题可同时引用一条混合评论，4星评论不自动归为负面。“Thank you”等缺少具体信息的评论不进入主题。词云频次仅表示这20条样本中的主题提及数，不代表市场差评率。部分评论属于其他变体或较早时间，例如旅行磁力片评论标注Original，不将其专属属性直接归到当前Winter Wonder变体。\n\n观察：旅行磁力拼搭和动手学习类样本有便携、易上手及学习体验反馈；感官软捏类同时出现良好触感、异味和破损反馈。推断：可优先打样验证收纳、材料耐用性和实际使用体验。没有成本、利润、广告转化或真实订单数据，不能据榜单与评论宣称盈利。下列建议是待验证方向，并非补充采集来源。",
   "opportunities": [
     {
       "title": "旅行磁力拼搭：验证收纳与小件管理",
@@ -7251,6 +7281,7 @@
     "visible_review_count": 1245,
     "analyzed_review_count": 20,
     "detailed_product_count": 117,
-    "blocked_asin": "B00IUAAK2A"
+    "blocked_asin": "B00IUAAK2A",
+    "list_card_recovery": "work/amazon-best-card-recovered-2026-10-09.json"
   }
 }

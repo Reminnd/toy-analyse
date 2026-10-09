@@ -1,4 +1,5 @@
 import { readAmazonDetail } from './amazon_detail.mjs';
+import { recoverListCard } from './amazon_list_card.mjs';
 
 // Consume declared ASINs only; a source-range shortfall is not a retry queue.
 export async function recoverAmazon(page, original, source, country, progress) {
@@ -19,10 +20,18 @@ export async function recoverAmazon(page, original, source, country, progress) {
       python_error:candidate.error || candidate.detail_error,
       python_deferred_reason:candidate.deferred_reason || candidate.detail_deferred_reason};
     try {
-      await page.goto(candidate.product_url, {waitUntil:'domcontentloaded',timeout:45000});
+      const listOnly = !candidate.title?.trim() && /详情页商品 ID 与榜单商品不一致/.test(candidate.error || '');
+      let detail;
+      if (listOnly) {
+        // Python already proved the detail is another variant. Do not request it again.
+        detail = await recoverListCard(page, original, candidate);
+      } else {
+        await page.goto(candidate.product_url, {waitUntil:'domcontentloaded',timeout:45000});
+        detail = await page.evaluate(readAmazonDetail, asin);
+      }
       attempt.url = page.url();
       attempt.observedDelivery = await page.locator('#glow-ingress-block').innerText().catch(() => '');
-      const detail = await page.evaluate(readAmazonDetail, asin);
+      attempt.scope = listOnly ? 'list_card' : 'detail';
       const product = {...candidate,
         ...Object.fromEntries(Object.entries(detail).filter(([,value]) => value !== null)),
         collected_at:new Date().toISOString(), recovery_engine:'playwright'};
@@ -32,6 +41,7 @@ export async function recoverAmazon(page, original, source, country, progress) {
       delete product.deferred_reason;
       delete product.detail_deferred_reason;
       delete product.needs_detail;
+      if (listOnly) product.detail_error = candidate.error;
       product.detail_missing = ['brand','reviews'].filter(key => !detail[key] || Array.isArray(detail[key]) && !detail[key].length);
       products.set(asin, product);
       attempt.status = 'recovered';
