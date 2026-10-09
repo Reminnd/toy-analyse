@@ -5867,12 +5867,12 @@
       "title": "Hallowee Hero Costume Stretch Spandex with Hidden Zippers & Detachable Mask",
       "brand": null,
       "rating": 5.0,
-      "rating_count": null,
+      "rating_count": 5,
       "review_count": null,
       "displayed_sales_message": null,
-      "image_url": "https://images-na.ssl-images-amazon.com/images/I/61Eu1V8jMHL._AC_UL300_SR300,200_.jpg",
-      "image_scope": "product",
-      "image_asin": null,
+      "image_url": "https://m.media-amazon.com/images/I/61Eu1V8jMHL._AC_SL1145_.jpg",
+      "image_scope": "selected_asin",
+      "image_asin": "B0HJRRVCWV",
       "sources": [
         "Amazon New Releases"
       ],
@@ -5893,8 +5893,8 @@
         }
       ],
       "keyword_source": "Codex 根据本轮实际标题提取并翻译；不是搜索量数据",
-      "missing_reason": "品牌未取得；销量原文未取得；详情ASIN与榜单不一致，未合并错变体字段；商品图；未独立确认当前ASIN图像归属",
-      "detail_source": null
+      "missing_reason": "已保存的美国页面中ASIN一致，详情已恢复；品牌与销量原文未从页面取得；当前ASIN主图，非完整变体图集。",
+      "detail_source": "https://www.amazon.com/dp/B0HJRRVCWV"
     },
     {
       "platform": "amazon",
@@ -7432,7 +7432,7 @@
       ]
     }
   ],
-  "summary": "本轮仅使用美国 Amazon Toys & Games 的热销榜与新品榜，不增加子类目。两榜各100条，合计200条榜单记录、195个有标题的不同ASIN，距离200个去重商品目标差5个，全部来自跨榜重叠。热销榜第39名的详情页切换到另一ASIN，现已从原榜单卡片补齐标题、评分和商品图；该商品品牌与销量等详情仍保留缺失。用户已确认仅采两榜并接受自然数量缺口。\n\nHTTP详情补充曾遇验证页，随后同一美国会话在正常浏览器中成功读取详情，已按Python优先、Playwright备用完成待补请求。195个商品均有图片和中英关键词；193个取得详情，187个有品牌、191个有评分、174个有销量原文，192张主图有页面ASIN关联。热销榜 B0FJ31ZCRB 与新品榜 B0HJRRVCWV 的详情ASIN不一致，保留列表数据，未合并错变体详情。部分已解析页面仍未返回品牌、评分或销量文案，不补造。销量原文不换算成日销量或精确月销量；未取得卖家内部SKU或完整变体图集。跨榜排名分别展示，不构造合并总榜排名。\n\n采集结果包含1976条去重可见评论，本报告对10个定向商品的20条评论进行语义分析；选取首条及最低/最高星级后去重，属于有意覆盖不同体验的样本，不是随机抽样。正负主题可同时引用一条混合评论，4星评论不自动归为负面。“Thank you”等缺少具体信息的评论不进入主题。词云频次仅表示这20条样本中的主题提及数，不代表市场差评率。部分评论属于其他变体或较早时间，例如旅行磁力片评论标注Original，不将其专属属性直接归到当前Winter Wonder变体。\n\n观察：旅行磁力拼搭和动手学习类样本有便携、易上手及学习体验反馈；感官软捏类同时出现良好触感、异味和破损反馈。推断：可优先打样验证收纳、材料耐用性和实际使用体验。没有成本、利润、广告转化或真实订单数据，不能据榜单与评论宣称盈利。下列建议是待验证方向，并非补充采集来源。",
+  "summary": "本轮仅使用美国 Amazon Toys & Games 的热销榜与新品榜，不增加子类目。两榜各100条，合计200条榜单记录、195个有标题的不同ASIN，距离200个去重商品目标差5个，全部来自跨榜重叠。热销榜第39名的详情页切换到另一ASIN，现已从原榜单卡片补齐标题、评分和商品图；该商品品牌与销量等详情仍保留缺失。用户已确认仅采两榜并接受自然数量缺口。\n\nHTTP详情补充曾遇验证页，随后同一美国会话在正常浏览器中成功读取详情，已按Python优先、Playwright备用完成待补请求。195个商品均有图片和中英关键词；194个取得详情，187个有品牌、191个有评分、174个有销量原文，193张主图有页面ASIN关联。热销榜 B0FJ31ZCRB 的详情仍展示另一颜色ASIN，保留列表数据，未合并错变体详情。新品榜 B0HJRRVCWV 本次页面ASIN已匹配，详情恢复。部分已解析页面仍未返回品牌、评分或销量文案，不补造。销量原文不换算成日销量或精确月销量；未取得卖家内部SKU或完整变体图集。跨榜排名分别展示，不构造合并总榜排名。\n\n采集结果包含1979条去重可见评论，本报告对10个定向商品的20条评论进行语义分析；选取首条及最低/最高星级后去重，属于有意覆盖不同体验的样本，不是随机抽样。正负主题可同时引用一条混合评论，4星评论不自动归为负面。“Thank you”等缺少具体信息的评论不进入主题。词云频次仅表示这20条样本中的主题提及数，不代表市场差评率。部分评论属于其他变体或较早时间，例如旅行磁力片评论标注Original，不将其专属属性直接归到当前Winter Wonder变体。\n\n观察：旅行磁力拼搭和动手学习类样本有便携、易上手及学习体验反馈；感官软捏类同时出现良好触感、异味和破损反馈。推断：可优先打样验证收纳、材料耐用性和实际使用体验。没有成本、利润、广告转化或真实订单数据，不能据榜单与评论宣称盈利。下列建议是待验证方向，并非补充采集来源。",
   "opportunities": [
     {
       "title": "旅行磁力拼搭：验证收纳与小件管理",
@@ -7477,17 +7477,20 @@
   "collection_evidence": {
     "list_scope_file": "work/amazon-us-scope-2026-10-09.json",
     "enrichment_log": "work/current-enrichment-log.json",
-    "visible_review_count": 1976,
+    "visible_review_count": 1979,
     "analyzed_review_count": 20,
-    "detailed_product_count": 193,
+    "detailed_product_count": 194,
     "list_card_recovery": "work/amazon-best-card-recovered-2026-10-09.json",
     "browser_recovery_files": [
       "work/browser-details-best.json",
       "work/browser-details-new.json"
     ],
     "unresolved_detail_asins": [
-      "B0FJ31ZCRB",
-      "B0HJRRVCWV"
+      "B0FJ31ZCRB"
+    ],
+    "variant_evidence": [
+      "work/variant-B0FJ31ZCRB.json",
+      "work/variant-B0HJRRVCWV.json"
     ]
   }
 }
