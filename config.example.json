@@ -26,5 +26,7 @@
   ],
   "selection_assistant_url": null,
   "output_directory": "outputs",
-  "unique_product_target": 200
+  "unique_product_target": 200,
+  "supplemental_sources_allowed": false,
+  "shortfall_policy": "report"
 }

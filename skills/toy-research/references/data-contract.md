@@ -1,6 +1,6 @@
 # 配置与报告数据
 
-数量口径：配置与报告顶层 `unique_product_target=200`，表示合计 200 个不重复商品。同一 Amazon 市场按 ASIN 去重，商品 id 使用 `amazon:US:ASIN`，保留各榜单来源和排名。单来源 target 为采集上限，当前两榜各 100；报告分别展示来源覆盖与合并后实际数量、缺口。补充来源需用户配置，不能把子类目排名当全类目排名。
+数量口径：配置与报告顶层 `unique_product_target=200`，表示合计 200 个不重复商品。同一 Amazon 市场按 ASIN 去重，商品 id 使用 `amazon:US:ASIN`，保留各榜单来源和排名。单来源 target 为采集上限，当前两榜各 100；报告分别展示来源覆盖与合并后实际数量、缺口。当前用户明确不启用补充来源：`supplemental_sources_allowed=false`、`shortfall_policy="report"`。仅采现有两榜并保留缺口，不能为达到200而加入子类目。声明的ASIN数与已取得标题的有效商品数必须区分。
 
 详情主图在页面 `input#ASIN` 与榜单 ASIN 一致时，记录 `image_scope="selected_asin"`、`image_asin` 及 `image_url`，报告必须保留并显示该关联。未取得明确 ASIN 时仍标为 `product`。这表示当前选中 ASIN 的主图，不表示已取得卖家内部 SKU 编号或全部变体图片。
 
