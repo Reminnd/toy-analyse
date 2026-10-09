@@ -24,7 +24,7 @@ node scripts/playwright_crawler.mjs --platform amazon --country <country> --url 
 1. 核对配置市场、榜单 URL、实际分页和去重 ID，先排除配置错误。
 2. 检查 HTML 中的结构化数据。Amazon 当前 `data-client-recs-list` 包含未渲染商品 ID 和 `render.zg.rank`；程序读取真实清单，并请求缺少标题的商品详情。只有取得标题才计入完整商品，失败项保存在 `unresolved_products`。
 3. 跟随页面实际 next 链接。某一页失败时保留之前的结果和 `pagination_error`；不能把未读完的分页认定为榜单只有这么多条。
-4. 查看 `coverage.missing_declared_ranks`：这是页面声明存在但尚未取得的商品。只针对这些缺口重试或使用浏览器补采，不重复整轮扫描已完成商品。
+4. 查看 `coverage.missing_declared_ranks`：这是页面声明存在但尚未取得的商品。新版 Python 将原始 URL、国家、ASIN 与排名保存在结果中。通过下方 `--python-result` 将已声明缺口交给浏览器，不重复整轮扫描已完成商品。
 5. `source_range_shortfall=true` 表示已读完该来源且声明范围不足目标。不能通过重试制造第 101–200 名，需有相同市场、类目和排名口径的其他数据源；仍不足就明确交付部分报告。
 6. HTML 不提供数据时，检查浏览器实际网络请求，验证可在同一用户会话中使用的商品接口及分页参数；不要凭猜测拼接接口。只有接口需要动态浏览器状态时才维持 Playwright 备选。
 
@@ -51,3 +51,15 @@ Amazon `HTTP 200` 也可能是 `Continue shopping` 验证页。实际返回的�
 FastMoss 需要已授权凭证；`--sales-history <work/history> --end-date YYYY-MM-DD` 在搜索后拉取近 28 日日销量并按市场/商品积累。重复日期更新，不重复累加；只有历史完整覆盖 30 天才输出月窗口总和。首次 28 天不足时月销量 null。接口时区未说明时保留未知，不擅自称为目标市场昨日。
 
 参考：[Playwright Authentication](https://playwright.dev/docs/auth)、[Requests Session](https://requests.readthedocs.io/en/latest/user/advanced/#session-objects)。
+
+## Python 缺口定向交接
+
+```text
+node scripts/playwright_crawler.mjs --platform amazon --country US --url <same-list-url> --python-result <work/raw.json> --storage-state <work/.auth/amazon-US.json> --profile <work/browser-profile> --details --output <work/recovered.json>
+```
+
+输入必须来自新版 Python 爬虫，URL、平台和国家必须一致。此模式只尝试 `unresolved_products`；开启 `--details` 时也尝试已有商品的 `detail_error`。不重抓已完成商品，不补造来源未声明的 ASIN，不解决 `pagination_error`。来源采集上限沿用 Python 结果的 `coverage.target`。
+
+输出保留 Python 来源与分页证据，逐次记录 `recovery_attempts`（原错误、浏览器结果、实际 URL、配送地区）。详情跳到其他 ASIN 时拒绝合并；遇验证或登录限制页停止本批并保留未完成项。配送地区仍需核对，不自动设置 `marketVerified=true`。仅达到来源范围上限时不发起详情补采。
+
+2026-10-09 验证：4项定向补采测试通过；本机 HTTP 测试页经 Python CLI 产生缺口、Playwright CLI 补齐标题与品牌并保留第2名排名。该端到端验证使用测试数据，不代表新增真实 Amazon 商品。

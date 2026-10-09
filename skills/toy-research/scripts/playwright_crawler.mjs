@@ -3,6 +3,7 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { parseArgs } from 'node:util';
 import { readAmazonDetail } from './amazon_detail.mjs';
+import { recoverAmazon } from './amazon_recovery.mjs';
 export function uniqueProducts(items) {
   const seen = new Set();
   return items.filter(p => {
@@ -36,6 +37,10 @@ export async function website(source, config, root, progress) {
   const page = await context.newPage();
   let products = [], observedDelivery = '', visited = new Set();
   try {
+    if (source.pythonResult) {
+      const original = JSON.parse(await readFile(source.pythonResult, 'utf8'));
+      return await recoverAmazon(page, original, source, config.country, progress);
+    }
     await page.goto(source.url, {waitUntil:'domcontentloaded',timeout:45000});
     for (let pageNo = 1; pageNo <= 20 && products.length < (source.limit || 200); pageNo++) {
       if (visited.has(page.url())) break;
@@ -121,11 +126,12 @@ export async function website(source, config, root, progress) {
 }
 
 
-const {values:a}=parseArgs({options:{url:{type:'string'},platform:{type:'string'},country:{type:'string'},output:{type:'string'},profile:{type:'string'},browser:{type:'string',default:'chrome'},limit:{type:'string',default:'200'},details:{type:'boolean',default:false},'storage-state':{type:'string'}}});
+const {values:a}=parseArgs({options:{url:{type:'string'},platform:{type:'string'},country:{type:'string'},output:{type:'string'},profile:{type:'string'},browser:{type:'string',default:'chrome'},limit:{type:'string',default:'200'},details:{type:'boolean',default:false},'storage-state':{type:'string'},'python-result':{type:'string'}}});
 try {
   for(const k of ['url','platform','country','output','profile']) if(!a[k]) throw Error(`Missing --${k}`);
   if (!Number.isInteger(Number(a.limit)) || Number(a.limit)<1 || Number(a.limit)>200) throw Error('limit 必须在 1–200 之间');
-  const result=await website({id:'source',url:a.url,platform:a.platform,name:a.platform,limit:Number(a.limit),details:a.details,storageState:a['storage-state']},{country:a.country,browser:a.browser},path.resolve(a.profile),message=>console.error(message));
+  if (a['python-result'] && a.platform !== 'amazon') throw Error('--python-result 当前仅支持 Amazon');
+  const result=await website({id:'source',url:a.url,platform:a.platform,name:a.platform,limit:Number(a.limit),details:a.details,storageState:a['storage-state'],pythonResult:a['python-result']},{country:a.country,browser:a.browser},path.resolve(a.profile),message=>console.error(message));
   await mkdir(path.dirname(path.resolve(a.output)),{recursive:true});
   await writeFile(a.output,JSON.stringify(result,null,2));
   console.log(JSON.stringify({count:result.products.length,output:path.resolve(a.output),marketVerified:result.marketVerified}));

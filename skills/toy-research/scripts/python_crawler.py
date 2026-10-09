@@ -121,6 +121,7 @@ def parse_page(html, url, platform, country):
 
 
 def crawl(url, platform, country, limit=200, details=False, storage_state=None):
+    source_url = url
     if platform not in ("amazon", "temu", "tiktok", "aliexpress"):
         raise ValueError("此 Python 爬虫尚未适配该平台")
     products, seen, visited = [], set(), set()
@@ -166,7 +167,7 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None):
                     detail_response.raise_for_status()
                     product.update(parse_detail(detail_response.text,detail_response.url,key))
                 except (ValueError, requests.RequestException) as error:
-                    unresolved.append({'product_id':key,'rank':product.get('rank'),'error':str(error)})
+                    unresolved.append({**product, 'error':str(error)})
                     continue
             product.update({"collected_at": datetime.now(timezone.utc).isoformat(),
                             "sales_day": None, "sales_week": None, "sales_month": None,
@@ -190,7 +191,8 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None):
                 product['detail_error'] = str(error)
     observed_ranks = {p['rank'] for p in products if p.get('rank')}
     missing_ranks = sorted(rank for rank in declared_ranks if rank <= limit and rank not in observed_ranks)
-    return {"products": products[:limit], "observedDelivery": delivery, "pages": pages,
+    return {"source_url":source_url,"platform":platform,"country":country,
+            "products": products[:limit], "observedDelivery": delivery, "pages": pages,
             'auth_state':auth,'unresolved_products':unresolved,'pagination_error':pagination_error,
             'coverage':{'target':limit,'actual':len(products),'missing':max(0,limit-len(products)),
                         'declared_rank_max':max(declared_ranks,default=None),'missing_declared_ranks':missing_ranks,

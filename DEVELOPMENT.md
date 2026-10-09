@@ -10,7 +10,7 @@
 python -m pip install -r requirements.txt
 npm install
 python -m unittest discover -s tests -p "test_*.py"
-node --test tests/sales.test.mjs
+node --test tests/sales.test.mjs tests/recovery.test.mjs
 ```
 
 浏览器脚本默认使用本机 Chrome；实际参数见脚本 `--help` 或 `parseArgs` 定义。安装和配置说明见 `INSTALL.md`。无需独立网站、额外 AI API 或自建调度服务；分析由 Codex 执行，定时任务使用原生 automation。
@@ -26,7 +26,7 @@ node --test tests/sales.test.mjs
 ## 下一步开发重点
 
 1. **折叠详情表解析已修复（2026-10-09）。** 已覆盖真实 HTML 中的 `productDetails_expanderTables_depthLeftSections` 容器与 `Brand Name` 标签，Python/Playwright 在真实结构片段测试中结果一致。主图在页面 ASIN 与请求一致时记录 `image_asin` 与 `selected_asin` 范围；仍未实现全部变体图集。
-2. **浏览器定向补采尚未集成为通用流程。** 本次新品第32名为人工编排的浏览器补采；源码中常规浏览器采集器尚不能自动消费 Python 的缺口列表。应按原ASIN和原榜单排名补采，不能把详情页切换后的另一变体指标合并进来。
+2. **浏览器定向补采已接通（2026-10-09）。** `--python-result` 消费新版 Python 的缺口列表，保留原 ASIN、排名和错误，拒绝不同 ASIN 详情，遇验证页停止本批。4项测试与本机 HTTP/Chrome 命令行链路通过；真实线上缺口恢复效果仍待验证，不能据此称200个不同商品已取得。
 3. **合计200个不重复商品未达到。** 用户已确认按同一市场 ASIN 去重，两榜合计目标200个。历史样例193个，缺7个；两榜各100条不能保证200个独立商品。额外链接可配置并保留独立来源，不冒充原榜排名。报告现显示全局目标与去重后缺口。
 4. **最新指标要求（2026-10-09）。** 销量直接显示来源返回原文，关键词显示中英文对照；精确日周月销量和上架时间已不再是当前必填目标。品牌覆盖与完整SKU图片仍需实跑验证。部分详情请求返回验证页，不能将缺失补造。
 5. **其他平台接入未完成。** Temu、AliExpress需要有效会话；TikTok Shop只有初始网页解析。SellerSprite、FastMoss官方API客户端已实现，但用户明确尚未配置API，未经真实账户联调。Google Trends代理接口亦未实跑；选品助手网址暂定。
