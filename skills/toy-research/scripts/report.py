@@ -61,6 +61,16 @@ def cloud(themes, total):
     return f'<div class="cloud">{words}</div><table><tr><th>主题</th><th>评论数 / 样本总数</th></tr>{table}</table>'
 
 
+def detail_information(product):
+    specs = ''.join(f'<dt>{esc(key)}</dt><dd>{esc(value)}</dd>'
+                    for key, value in product.get('specifications', {}).items())
+    summary = product.get('feature_summary')
+    if not specs and not summary:
+        return ''
+    description = f'<p>{esc(summary)}</p>' if summary else ''
+    return f'<details><summary>展开详情规格与商品要点</summary>{description}<dl>{specs}</dl><small>来源页面提供；商品宣传不等于独立测试结论。</small></details>'
+
+
 def render(data):
     validate(data)
     products = data.get("products", [])
@@ -77,7 +87,7 @@ def render(data):
         sales = esc(p.get('displayed_sales_message'))
         keywords = '<br>'.join(f'{esc(k.get("en"))} / {esc(k.get("zh"))}' if isinstance(k, dict) else f'{esc(k)} / 翻译缺失' for k in p.get('keywords', []))
         rankings = '<br>'.join(f'{esc(item.get("source"))} · 排名 {esc(item.get("rank"))}' for item in p.get('source_ranks', [{'source': p.get('source'), 'rank': p.get('rank')}]))
-        cards.append(f'<tr><td>{picture}<small>{esc(p.get("image_scope"))}</small></td><td>{link(p.get("url"),p["title"])}<small>{esc(p["id"])}<br>{rankings}</small></td><td>{esc(p.get("brand"))}</td><td>{esc(p.get("rating"))}<small>评分数 {esc(p.get("rating_count"))}<br>文字评价数 {esc(p.get("review_count"))}</small></td><td>{sales}</td><td>{keywords}<small>{esc(p.get("missing_reason",""))}</small></td></tr>')
+        cards.append(f'<tr><td>{picture}<small>{esc(p.get("image_scope"))}</small></td><td>{link(p.get("url"),p["title"])}<small>{esc(p["id"])}<br>{rankings}</small>{detail_information(p)}</td><td>{esc(p.get("brand"))}</td><td>{esc(p.get("rating"))}<small>评分数 {esc(p.get("rating_count"))}<br>文字评价数 {esc(p.get("review_count"))}</small></td><td>{sales}</td><td>{keywords}<small>{esc(p.get("missing_reason",""))}</small></td></tr>')
     recommendations = ''.join(f'<article><h3>{esc(o["title"])}</h3><p>{esc(o["reason"])}</p><small>商品依据：{esc(", ".join(o["product_ids"]))}</small></article>' for o in data.get("opportunities", []))
     review_rows = ''.join(f'<tr><td>{esc(r["id"])}<small>{esc(r["product_id"])}</small></td><td>{esc(r["text"])}<small>{"原文摘录" if r.get("is_excerpt") else "原文"} · {esc(r.get("sampling",""))}</small></td><td>{esc(r.get("rating"))}</td><td>{link(r.get("url"),r.get("date") or "原始评论")}</td></tr>' for r in reviews)
 

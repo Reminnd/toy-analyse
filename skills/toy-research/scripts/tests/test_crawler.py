@@ -13,6 +13,14 @@ from session_state import load_state
 
 
 class CrawlerTests(unittest.TestCase):
+    def test_feature_bullets_are_scoped_and_deduplicated(self):
+        html = '''<input id="ASIN" value="B000000001"><span id="productTitle">Toy</span>
+        <div id="feature-bullets"><ul><li><span class="a-list-item">Portable play</span></li>
+        <li><span class="a-list-item">Portable play</span></li></ul></div>
+        <div><span class="a-list-item">Unrelated recommendation</span></div>'''
+        result = parse_detail(html, 'https://www.amazon.com/dp/B000000001', 'B000000001')
+        self.assertEqual(result['feature_bullets'], ['Portable play'])
+
     def test_embedded_ids_keep_source_rank_without_inventing_title(self):
         records=[{'id':'B000000031','metadataMap':{'render.zg.rank':'31'}}]
         html='<div data-client-recs-list=\''+json.dumps(records)+'\'></div>'

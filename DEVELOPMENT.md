@@ -54,6 +54,10 @@ node --test tests/sales.test.mjs tests/recovery.test.mjs
 node --test tests/list_card.test.mjs
 ```
 
-最后一项需要本机Chrome，使用本地拦截页面，不访问Amazon。已验证18项Python测试、5项恢复测试、1项浏览器卡片测试及2项销量窗口测试；实站证据另见上述最新结果。测试通过不表示所有在线字段都可获取。
+最后一项需要本机Chrome，使用本地拦截页面，不访问Amazon。已验证20项Python测试、5项恢复测试、1项浏览器卡片测试及2项销量窗口测试；实站证据另见上述最新结果。测试通过不表示所有在线字段都可获取。
 
 `config.example.json` 复制为任务目录的 `toy-research.config.json` 后修改。Cookie和浏览器状态保存在 `work/.auth/`，不提交仓库或打包；包内不含API密钥、node_modules和完整原始评论。报告样例仅保留短摘录和原始评论链接。安装说明见 `INSTALL.md`。
+
+## 详情信息展示更新
+
+详情采集新增 `feature_bullets`，保留商品要点供分析；原有 `attributes` 可整理为报告的 `specifications`。当前样例从已保存的2026-10-09数据展示189个商品的年龄、材质、尺寸、重量、颜色、型号或数量规格；点击商品行的展开区查看。两种解析器在同一真实HTML的5条商品要点上结果一致，报告展开交互已在本地Chrome检查。本次不是新的全量采集。

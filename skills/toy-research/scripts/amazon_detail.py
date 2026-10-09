@@ -56,6 +56,9 @@ def parse_detail(html, url, product_id):
     image = soup.select_one('#landingImage, #imgBlkFront')
     image_asin = asin.get('value') if asin and asin.get('value') == product_id and image else None
     sales = soup.select_one('#social-proofing-faceout-title-tk_bought')
+    feature_bullets = list(dict.fromkeys(
+        node.get_text(' ', strip=True) for node in soup.select('#feature-bullets li .a-list-item')
+        if node.get_text(' ', strip=True)))
     return {'title':title.get_text(' ',strip=True), 'brand':attributes.get('Brand') or attributes.get('Brand Name') or attributes.get('品牌') or (brand_match[1] if brand_match else None),
             'rating':float(rating_match[0].replace(',','.')) if rating_match else None, 'rating_raw':rating_raw,
             'listed_at':attributes.get('Date First Available') or attributes.get('上架时间'),
@@ -63,4 +66,4 @@ def parse_detail(html, url, product_id):
             'rating_count':int(count_number) if count_number else None,'review_count':None,
             'image_url':(image.get('data-old-hires') or image.get('src')) if image else None,
             'image_scope':'selected_asin' if image_asin else 'product', 'image_asin':image_asin, 'displayed_sales_message':sales.get_text(' ',strip=True) if sales else None,
-            'reviews':reviews, 'detail_source':url}
+            'feature_bullets':feature_bullets, 'reviews':reviews, 'detail_source':url}

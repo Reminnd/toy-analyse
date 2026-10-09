@@ -27,7 +27,7 @@ description: 在 Codex 中配置国家、平台与每日原生计划，使用 AP
 
 1. 读取配置与 [references/sources.md](references/sources.md)，访问配置的 Amazon 市场与链接。Python 原站采集优先，Playwright 处理动态内容与可补齐缺口。
 2. 两榜合计目标 `unique_product_target=200` 个不重复商品，同一市场按 ASIN 去重，保留各榜单原始排名与关联。当前两个全类目榜单分别采集公开前 100 名；配置中的来源 target 表示单来源采集上限。跨榜重复只计一次。当前用户明确仅使用现有两榜，`supplemental_sources_allowed=false`、`shortfall_policy=report`；不足 200 个时报告真实缺口，不主动扩展到子类目或其他来源。用户日后明确修改链接时再更新配置。公开范围不足时报告缺口；不复制商品、不补造、不拼子类目冒充全类目 Top 200、不把搜索结果改名官方榜单。
-3. 补充标题、关键词、图片及商品/SKU 范围、品牌、评分和来源返回的销量信息。销量直接使用 `displayed_sales_message` 原文，不拆成日周月精确销量、不换算。图片未确认对应SKU时标为商品图。
+3. 补充标题、关键词、图片及商品/SKU 范围、品牌、评分和来源返回的销量信息。销量直接使用 `displayed_sales_message` 原文，不拆成日周月精确销量、不换算。图片未确认对应SKU时标为商品图。详情解析返回 `attributes` 和 `feature_bullets`；从中保留年龄、材质、尺寸、重量、颜色、型号、数量等事实规格到 `specifications`，可将商品要点用中文概括为 `feature_summary`。区分商品宣传与评论证据，不把耐用、教育或健康效果宣传当成独立验证结果，不在公开报告整段复制营销文案。
 4. 取得实际评论文本，保存评论 ID、商品 ID、链接、日期、星级与采样方式。Codex 按语义分析正面、负面主题，保留否定；每个主题引用 `review_ids`，混合评论可属于两组。没有评论不生成伪词云。
 5. 关键词必须同时给出英文和中文，写为 `keywords: [{"en":"latex balloons","zh":"乳胶气球"}]`。由 Codex 根据实际标题或页面语义提取并翻译；保留专有品牌名，不把译名当作新品牌。不请求未启用的 Google Trends；标题词不代表搜索量。
 6. 每批最多读取约 40 个商品及对应评论，批次摘要写入工作目录。不要一次把全部页面 HTML 放入模型上下文。根据各批证据生成全局 summary 和 opportunities，每个建议引用 `product_ids`，区分观察与推断，不编造利润或确定性分数。

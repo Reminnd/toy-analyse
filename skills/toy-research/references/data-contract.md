@@ -32,3 +32,7 @@
 同一商品可属于多个榜单，榜单独立计数，主表去重保留关联。跨平台以平台+国家+商品 ID 区分；相似标题不能合并销量。词云大小按主题引用的去重评论数，并输出样本分母；未取得评论时明确缺失。Google Trends 保留查询窗口、地区和词组，同批归一化指数才可比较。
 
 多榜单商品使用 `sources` 保存榜单名称列表，`source_ranks` 保存各榜单的 `{source, rank}`，报告逐个显示排名。`rating_count` 是评分数量，`review_count` 是来源明确显示的文字评价数量；不能互相替代，已采集评论数量由 `reviews` 统计。
+
+## 详情补充字段
+
+两种详情解析器返回 `attributes`（原字段名与原单位）及 `feature_bullets`（About this item 原文，仅作为分析输入）。报告商品可以包含 `specifications: {"Material":"Clay","Manufacturer recommended age":"3 years and up"}` 和 `feature_summary`（Codex基于实际详情写的简短中文概述）。渲染器在商品行提供展开区。只写页面明确提供的规格；商品文案不作为已证实效果，公开报告使用简要概述而非复制完整营销段落。

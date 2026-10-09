@@ -7,6 +7,13 @@ from report import render, validate
 
 
 class ReportTests(unittest.TestCase):
+    def test_detail_specs_and_summary_are_visible_when_supplied(self):
+        result = render({'products': [{'id':'p','title':'Toy',
+            'specifications':{'Material':'Clay'},'feature_summary':'页面介绍便携玩法。'}]})
+        self.assertIn('<dt>Material</dt><dd>Clay</dd>', result)
+        self.assertIn('页面介绍便携玩法。', result)
+        self.assertIn('展开详情规格与商品要点', result)
+
     def test_cross_list_product_counts_once_toward_global_target(self):
         result = render({'unique_product_target': 200,
             'sources': [{'name': 'Best', 'count': 1}, {'name': 'New', 'count': 1}],

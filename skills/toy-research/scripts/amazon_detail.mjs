@@ -34,10 +34,11 @@ export function readAmazonDetail(productId) {
   const ratingValue=ratingRaw.match(/\d+[.,]?\d*/)?.[0];
   const image=document.querySelector('#landingImage, #imgBlkFront');
   const imageAsin=image && asin===productId ? asin : null;
+  const feature_bullets=[...new Set([...document.querySelectorAll('#feature-bullets li .a-list-item')].map(text).filter(Boolean))];
   return {title,brand:attributes.Brand || attributes['Brand Name'] || attributes['品牌'] || bylineBrand || null,listed_at:attributes['Date First Available'] || attributes['上架时间'] || null,
     rating:ratingValue ? Number(ratingValue.replace(',','.')) : null,rating_raw:ratingRaw,
     listed_at_kind:'source_display',attributes,rating_count:count ? Number(count) : null,review_count:null,
     image_url:image?.getAttribute('data-old-hires') || image?.src || null,image_scope:imageAsin ? 'selected_asin' : 'product',image_asin:imageAsin,
     displayed_sales_message:text(document.querySelector('#social-proofing-faceout-title-tk_bought')),
-    reviews,detail_source:location.href};
+    feature_bullets,reviews,detail_source:location.href};
 }
