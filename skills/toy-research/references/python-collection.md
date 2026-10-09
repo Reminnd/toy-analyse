@@ -63,3 +63,9 @@ node scripts/playwright_crawler.mjs --platform amazon --country US --url <same-l
 输出保留 Python 来源与分页证据，逐次记录 `recovery_attempts`（原错误、浏览器结果、实际 URL、配送地区）。详情跳到其他 ASIN 时拒绝合并；遇验证或登录限制页停止本批并保留未完成项。配送地区仍需核对，不自动设置 `marketVerified=true`。仅达到来源范围上限时不发起详情补采。
 
 2026-10-09 验证：4项定向补采测试通过；本机 HTTP 测试页经 Python CLI 产生缺口、Playwright CLI 补齐标题与品牌并保留第2名排名。该端到端验证使用测试数据，不代表新增真实 Amazon 商品。
+
+## 验证页后的停止与恢复
+
+Python 检出 Amazon 验证表单后停止当前来源的后续请求，包括分页及详情。已经收到的列表仍可解析并保存；`collection_stop` 记录阶段、URL、ASIN（如适用）、错误类型与原因，`next_page` 保留未读分页。失败详情使用 `error` 或 `detail_error`；未请求项使用 `deferred_reason` 或 `detail_deferred_reason`，不能把它们写成已尝试失败。即使尚无完整标题，也保存已声明的ASIN，`coverage.actual=0`，不能当完整采集成功。
+
+用户在正常浏览器完成验证并更新会话后，再用 `--python-result --details` 尝试失败和延后详情。补采结果保留原始停止证据及每次恢复结果；仍需处理的分页不会自动完成。不得仅因有待补项而反复请求同一验证页。本轮实际触发验证的详情 ASIN 为 B00IUAAK2A，当前完整报告已保留缺失。

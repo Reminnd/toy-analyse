@@ -10,7 +10,7 @@ import requests
 from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-from amazon_detail import parse_detail
+from amazon_detail import parse_detail, AmazonVerificationRequired
 from session_state import load_state
 
 
@@ -109,6 +109,8 @@ def parse_page(html, url, platform, country):
         next_node = soup.select_one('a[rel="next"]')
     delivery_node = soup.select_one("#glow-ingress-block")
     if not products:
+        if platform=='amazon' and soup.select_one('form[action*="validateCaptcha"]'):
+            raise PageAccessError('browser_challenge','Amazon 返回验证页面；请在浏览器完成验证并更新会话后再继续')
         if platform=='temu' and 'upload-static/assets/chl/js/' in html and 'challenge' in html:
             raise PageAccessError('browser_challenge','Temu 返回浏览器校验页面；使用用户会话验证后重试 Python，必要时使用 Playwright')
         if platform=='aliexpress' and 'login.aliexpress.com' in html and 'x5referer' in html:
@@ -127,6 +129,7 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None):
     products, seen, visited = [], set(), set()
     delivery, pages, unresolved, declared_ranks = "", [], [], set()
     pagination_error = None
+    collection_stop = None
     session = requests.Session()
     retry = Retry(total=2, backoff_factor=1, status_forcelist=[429, 500, 502, 503, 504], allowed_methods=["GET"])
     session.mount("https://", HTTPAdapter(max_retries=retry))
@@ -139,15 +142,16 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None):
             response = session.get(url, timeout=40)
             response.raise_for_status()
         except requests.RequestException as error:
-            if not products:
+            if not products and not unresolved:
                 raise
             pagination_error = str(error)
             break
         try:
             data = parse_page(response.text, response.url, platform, country)
         except PageAccessError as error:
-            if not products: raise
+            if not products and not unresolved: raise
             pagination_error=str(error)
+            collection_stop={'phase':'pagination','url':response.url,'code':error.code,'reason':str(error)}
             break
         pages.append({"url": response.url, "declared": len(data["products"]),"rendered_titles":sum(bool(p['title']) for p in data['products'])})
         delivery = data["delivery"] or delivery
@@ -161,6 +165,9 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None):
             if len(products) >= limit:
                 continue
             if product.get('needs_detail'):
+                if collection_stop:
+                    unresolved.append({**product, 'deferred_reason':collection_stop['reason']})
+                    continue
                 try:
                     print('补齐内嵌榜单商品 '+key,file=sys.stderr)
                     detail_response = session.get(product['product_url'],timeout=40)
@@ -168,16 +175,21 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None):
                     product.update(parse_detail(detail_response.text,detail_response.url,key))
                 except (ValueError, requests.RequestException) as error:
                     unresolved.append({**product, 'error':str(error)})
+                    if isinstance(error, AmazonVerificationRequired):
+                        collection_stop={'phase':'embedded_detail','product_id':key,
+                                         'url':product['product_url'],'code':error.code,'reason':str(error)}
                     continue
             product.update({"collected_at": datetime.now(timezone.utc).isoformat(),
                             "sales_day": None, "sales_week": None, "sales_month": None,
                             "listed_at": product.get('listed_at')})
             products.append(product)
         url = data["next"]
-    if not products:
+        if collection_stop:
+            break
+    if not products and not unresolved:
         raise ValueError("HTTP 页面未取得商品；可能需要 JavaScript、登录或页面适配，可改用 Playwright")
     products = products[:limit]
-    if details and platform == 'amazon':
+    if details and platform == 'amazon' and not collection_stop:
         for product in products:
             if product.get('detail_source'):
                 continue
@@ -189,14 +201,23 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None):
                 product['detail_missing'] = [key for key in ['brand','listed_at','reviews'] if not detail.get(key)]
             except (ValueError, requests.RequestException) as error:
                 product['detail_error'] = str(error)
+                if isinstance(error, AmazonVerificationRequired):
+                    collection_stop={'phase':'detail','product_id':product['product_id'],
+                                     'url':product['product_url'],'code':error.code,'reason':str(error)}
+                    break
+    if collection_stop:
+        for product in products:
+            if not product.get('detail_source') and not product.get('detail_error'):
+                product['detail_deferred_reason']=collection_stop['reason']
     observed_ranks = {p['rank'] for p in products if p.get('rank')}
     missing_ranks = sorted(rank for rank in declared_ranks if rank <= limit and rank not in observed_ranks)
     return {"source_url":source_url,"platform":platform,"country":country,
             "products": products[:limit], "observedDelivery": delivery, "pages": pages,
             'auth_state':auth,'unresolved_products':unresolved,'pagination_error':pagination_error,
+            'collection_stop':collection_stop,'next_page':url,
             'coverage':{'target':limit,'actual':len(products),'missing':max(0,limit-len(products)),
                         'declared_rank_max':max(declared_ranks,default=None),'missing_declared_ranks':missing_ranks,
-                        'source_range_shortfall':max(declared_ranks,default=0)<limit if not url else None},
+                        'source_range_shortfall':max(declared_ranks,default=0)<limit if not url and not collection_stop else None},
             "marketVerified": False,
             "note": "Python HTTP 采集，读取可用内嵌商品清单并补齐详情；无法补齐的商品单独列出。实际配送地区：" + (delivery or "未识别")}
 

@@ -57,3 +57,15 @@ test('source range shortfall alone makes no request', async () => {
   assert.equal(page.visited.length,0);
   assert.equal(result.coverage.actual,1);
 });
+test('deferred details can resume and retain their original reason', async () => {
+  const input=fixture();
+  input.unresolved_products=[];
+  input.products[0].product_url='https://www.amazon.com/dp/B000000001';
+  input.products[0].detail_deferred_reason='Earlier request returned a challenge';
+  const page=fakePage(()=>({title:'Recovered toy',brand:'Observed brand'}));
+  const result=await recoverAmazon(page,input,source,'US',()=>{});
+  assert.equal(page.visited.length,1);
+  assert.equal(result.products[0].brand,'Observed brand');
+  assert.equal(result.products[0].detail_deferred_reason,undefined);
+  assert.equal(result.recovery_attempts[0].python_deferred_reason,input.products[0].detail_deferred_reason);
+});

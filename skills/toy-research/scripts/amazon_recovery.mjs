@@ -9,14 +9,15 @@ export async function recoverAmazon(page, original, source, country, progress) {
   const products = new Map(result.products.map(p => [p.product_id, p]));
   const pending = new Map((result.unresolved_products || []).map(p => [p.product_id, p]));
   if (source.details) {
-    for (const p of products.values()) if (p.detail_error) pending.set(p.product_id, p);
+    for (const p of products.values()) if (p.detail_error || p.detail_deferred_reason) pending.set(p.product_id, p);
   }
   const attempts = [];
   for (const [asin, candidate] of pending) {
     if (!products.has(asin) && products.size >= result.coverage.target) continue;
     progress(`定向补采 ${asin} · 原排名 ${candidate.rank}`);
     const attempt = {product_id:asin, rank:candidate.rank,
-      python_error:candidate.error || candidate.detail_error};
+      python_error:candidate.error || candidate.detail_error,
+      python_deferred_reason:candidate.deferred_reason || candidate.detail_deferred_reason};
     try {
       await page.goto(candidate.product_url, {waitUntil:'domcontentloaded',timeout:45000});
       attempt.url = page.url();
@@ -28,6 +29,8 @@ export async function recoverAmazon(page, original, source, country, progress) {
       // Detail parsing rejects a switched ASIN before any merge occurs.
       delete product.error;
       delete product.detail_error;
+      delete product.deferred_reason;
+      delete product.detail_deferred_reason;
       delete product.needs_detail;
       product.detail_missing = ['brand','reviews'].filter(key => !detail[key] || Array.isArray(detail[key]) && !detail[key].length);
       products.set(asin, product);

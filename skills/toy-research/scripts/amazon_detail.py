@@ -4,12 +4,16 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 
+class AmazonVerificationRequired(ValueError):
+    code = 'browser_challenge'
+
+
 def parse_detail(html, url, product_id):
     soup = BeautifulSoup(html, "html.parser")
     title = soup.select_one("#productTitle")
     if not title:
         if soup.select_one('form[action*="validateCaptcha"]'):
-            raise ValueError("Amazon 返回继续购物验证页面，未取得商品详情；需在浏览器完成验证后更新会话")
+            raise AmazonVerificationRequired("Amazon 返回继续购物验证页面，未取得商品详情；需在浏览器完成验证后更新会话")
         raise ValueError("未取得商品详情标题，可能是登录或访问限制页面")
     asin = soup.select_one('input#ASIN')
     if asin and asin.get('value') and asin['value'] != product_id:
