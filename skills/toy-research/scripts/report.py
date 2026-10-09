@@ -16,17 +16,19 @@ def link(url, label):
     return esc(label)
 
 
-def metric(value):
-    if not isinstance(value, dict):
-        return "缺失"
-    return f'{esc(value.get("value"))}<small>{esc(value.get("source"))} · {esc(value.get("value_type"))}<br>{esc(value.get("period_start"))} – {esc(value.get("period_end"))}</small>'
-
-
 def validate(data):
     products = data.get("products", [])
     ids = [p["id"] for p in products]
     if len(set(ids)) != len(ids):
         raise ValueError("商品主表存在重复 id")
+    asin_keys = [(p.get('country', data.get('country')), p['product_id'])
+                 for p in products if p.get('platform') == 'amazon' and p.get('product_id')]
+    if len(set(asin_keys)) != len(asin_keys):
+        raise ValueError("同一市场的 Amazon ASIN 重复")
+    for product in products:
+        for keyword in product.get('keywords', []):
+            if isinstance(keyword, dict) and not all(isinstance(keyword.get(lang), str) and keyword[lang].strip() for lang in ('en', 'zh')):
+                raise ValueError("关键词必须同时包含非空英文 en 和中文 zh")
     for source in data.get("sources", []):
         observed = sum(1 for p in products if source["name"] in p.get("sources", [p.get("source")]))
         if source["count"] != observed:
@@ -64,24 +66,29 @@ def render(data):
     products = data.get("products", [])
     reviews = data.get("reviews", [])
     sources = ''.join(f'<li>{link(s.get("url"),s["name"])}：{esc(s["count"])}/{esc(s.get("target",200))} · {esc(s.get("note",""))}</li>' for s in data.get("sources", []))
+    target = data.get('unique_product_target', 200)
+    coverage = f'合计目标 {target} 个不重复商品；实际 {len(products)} 个；缺口 {max(0, target - len(products))} 个。'
     cards = []
     for p in products:
         image = p.get("image_url")
         picture = f'<img src="{esc(image)}" alt="商品图" loading="lazy">' if image and urlparse(image).scheme in ("http", "https") else '<span>图片缺失</span>'
-        sales = ''.join(f'<td>{metric(p.get(field))}</td>' for field in ("sales_day","sales_week","sales_month"))
+        if p.get('image_asin'):
+            picture += f'<small>ASIN {esc(p["image_asin"])}</small>'
+        sales = esc(p.get('displayed_sales_message'))
+        keywords = '<br>'.join(f'{esc(k.get("en"))} / {esc(k.get("zh"))}' if isinstance(k, dict) else f'{esc(k)} / 翻译缺失' for k in p.get('keywords', []))
         rankings = '<br>'.join(f'{esc(item.get("source"))} · 排名 {esc(item.get("rank"))}' for item in p.get('source_ranks', [{'source': p.get('source'), 'rank': p.get('rank')}]))
-        cards.append(f'<tr><td>{picture}<small>{esc(p.get("image_scope"))}</small></td><td>{link(p.get("url"),p["title"])}<small>{esc(p["id"])}<br>{rankings}</small></td><td>{esc(p.get("brand"))}</td><td>{esc(p.get("listed_at"))}</td><td>{esc(p.get("rating"))}<small>评分数 {esc(p.get("rating_count"))}<br>文字评价数 {esc(p.get("review_count"))}</small></td>{sales}<td>{esc(", ".join(p.get("keywords",[])))}<small>{esc(p.get("missing_reason",""))}<br>平台购买量原文：{esc(p.get("displayed_sales_message"))}</small></td></tr>')
+        cards.append(f'<tr><td>{picture}<small>{esc(p.get("image_scope"))}</small></td><td>{link(p.get("url"),p["title"])}<small>{esc(p["id"])}<br>{rankings}</small></td><td>{esc(p.get("brand"))}</td><td>{esc(p.get("rating"))}<small>评分数 {esc(p.get("rating_count"))}<br>文字评价数 {esc(p.get("review_count"))}</small></td><td>{sales}</td><td>{keywords}<small>{esc(p.get("missing_reason",""))}</small></td></tr>')
     recommendations = ''.join(f'<article><h3>{esc(o["title"])}</h3><p>{esc(o["reason"])}</p><small>商品依据：{esc(", ".join(o["product_ids"]))}</small></article>' for o in data.get("opportunities", []))
     review_rows = ''.join(f'<tr><td>{esc(r["id"])}<small>{esc(r["product_id"])}</small></td><td>{esc(r["text"])}<small>{"原文摘录" if r.get("is_excerpt") else "原文"} · {esc(r.get("sampling",""))}</small></td><td>{esc(r.get("rating"))}</td><td>{link(r.get("url"),r.get("date") or "原始评论")}</td></tr>' for r in reviews)
-    trends = ''.join(f'<li>{link(t.get("url"),t["keyword"])} · {esc(t.get("region"))} · {esc(t.get("window"))} · 相对兴趣 {esc(t.get("value"))}</li>' for t in data.get("trends", []))
+
     return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(data.get("title","玩具选品报告"))}</title>
 <style>body{{font:15px/1.7 system-ui,"Microsoft YaHei";color:#203c32;background:#f2f4ee;margin:0}}main{{max-width:1400px;margin:auto;padding:32px}}header{{background:#1e4537;color:white;padding:30px;border-radius:14px}}section{{background:white;padding:25px;border-radius:12px;margin-top:22px}}h1{{margin:0}}h2{{font-size:20px}}p{{white-space:pre-wrap}}a{{color:#2d684d}}small,.muted{{display:block;color:#738075;font-size:12px}}table{{border-collapse:collapse;width:100%;font-size:13px}}th,td{{text-align:left;padding:12px;border-bottom:1px solid #e3e9df;vertical-align:top}}img{{width:64px;height:70px;object-fit:contain}}.pair{{display:grid;grid-template-columns:1fr 1fr;gap:24px}}.cloud{{min-height:160px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px;padding:20px;color:#2b754a}}.negative .cloud{{color:#ae5839}}.cloud span{{overflow-wrap:anywhere}}.scroll{{overflow:auto}}article{{border-left:3px solid #719568;padding:0 20px;margin:25px 0}}@media(max-width:750px){{main{{padding:12px}}.pair{{display:block}}}}</style></head><body><main>
 <header><h1>{esc(data.get("title","玩具选品报告"))}</h1><div>{esc(data.get("country"))} · {esc(data.get("collected_at"))}</div></header>
-<section><h2>数据覆盖</h2><ul>{sources}</ul><p>主表 {len(products)} 个去重商品；评论样本 {len(reviews)} 条。字段缺失不等于 0，部分来源不足 200 条时本报告不是完整 Top 200。</p></section>
+<section><h2>数据覆盖</h2><ul>{sources}</ul><p>{esc(coverage)} 评论样本 {len(reviews)} 条。各榜单独立计数，跨榜重复 ASIN 仅计入主表一次；字段缺失不等于 0。合并商品集不代表单个官方 Top 200 榜单。</p></section>
 <section><h2>AI 选品分析</h2><p>{esc(data.get("summary","未生成分析"))}</p>{recommendations}</section>
 <section><h2>评论洞察与词云</h2><div class="pair"><div><h3>正面主题</h3>{cloud(data.get("positive",[]),len(reviews))}</div><div class="negative"><h3>负面主题</h3>{cloud(data.get("negative",[]),len(reviews))}</div></div></section>
-<section><h2>关键词趋势</h2><ul>{trends or '<li>尚未取得趋势数据</li>'}</ul></section>
-<section><h2>商品明细</h2><div class="scroll"><table><tr><th>图片</th><th>商品</th><th>品牌</th><th>上架时间</th><th>评分</th><th>日销量</th><th>周销量</th><th>月销量</th><th>关键词与缺失说明</th></tr>{''.join(cards)}</table></div></section>
+
+<section><h2>商品明细</h2><div class="scroll"><table><tr><th>图片</th><th>商品</th><th>品牌</th><th>评分</th><th>销量原文</th><th>关键词（English / 中文）与缺失说明</th></tr>{''.join(cards)}</table></div></section>
 <section><h2>评论证据</h2><div class="scroll"><table><tr><th>评论与商品 ID</th><th>原文</th><th>星级</th><th>来源</th></tr>{review_rows}</table></div></section></main></body></html>'''
 
 

@@ -15,7 +15,7 @@ def parse_detail(html, url, product_id):
     if asin and asin.get('value') and asin['value'] != product_id:
         raise ValueError("详情页商品 ID 与榜单商品不一致")
     attributes = {}
-    for row in soup.select('#productOverview_feature_div tr, #productDetails_techSpec_section_1 tr, #productDetails_detailBullets_sections1 tr'):
+    for row in soup.select('#productOverview_feature_div tr, #productDetails_techSpec_section_1 tr, #productDetails_detailBullets_sections1 tr, #productDetails_expanderTables_depthLeftSections tr'):
         cells = row.find_all(['th', 'td'], recursive=False)
         if len(cells) == 2:
             attributes[cells[0].get_text(' ', strip=True).strip(': \u200e\u200f')] = cells[1].get_text(' ', strip=True)
@@ -29,7 +29,7 @@ def parse_detail(html, url, product_id):
     for row in soup.select('[data-hook="review"]'):
         rid = row.get('id')
         body = row.select_one('[data-hook="reviewRichContentContainer"], [data-hook="review-body"]')
-        if not rid or rid in seen or body is None:
+        if not rid or rid in seen or body is None or not body.get_text(' ', strip=True):
             continue
         seen.add(rid)
         rating = row.select_one('[data-hook="review-star-rating"], [data-hook="cmps-review-star-rating"]')
@@ -50,12 +50,13 @@ def parse_detail(html, url, product_id):
     rating_raw = (rating_node.get('title') or rating_node.get_text(' ', strip=True)) if rating_node else ''
     rating_match = re.search(r'\d+[.,]?\d*', rating_raw)
     image = soup.select_one('#landingImage, #imgBlkFront')
+    image_asin = asin.get('value') if asin and asin.get('value') == product_id and image else None
     sales = soup.select_one('#social-proofing-faceout-title-tk_bought')
-    return {'title':title.get_text(' ',strip=True), 'brand':attributes.get('Brand') or attributes.get('品牌') or (brand_match[1] if brand_match else None),
+    return {'title':title.get_text(' ',strip=True), 'brand':attributes.get('Brand') or attributes.get('Brand Name') or attributes.get('品牌') or (brand_match[1] if brand_match else None),
             'rating':float(rating_match[0].replace(',','.')) if rating_match else None, 'rating_raw':rating_raw,
             'listed_at':attributes.get('Date First Available') or attributes.get('上架时间'),
             'listed_at_kind':'source_display', 'attributes':attributes,
             'rating_count':int(count_number) if count_number else None,'review_count':None,
             'image_url':(image.get('data-old-hires') or image.get('src')) if image else None,
-            'image_scope':'product', 'displayed_sales_message':sales.get_text(' ',strip=True) if sales else None,
+            'image_scope':'selected_asin' if image_asin else 'product', 'image_asin':image_asin, 'displayed_sales_message':sales.get_text(' ',strip=True) if sales else None,
             'reviews':reviews, 'detail_source':url}

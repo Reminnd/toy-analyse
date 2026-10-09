@@ -71,5 +71,20 @@ class CrawlerTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'继续购物验证页面'):
             parse_detail(html,'https://www.amazon.com/dp/B09PGVGCH5','B09PGVGCH5')
 
+    def test_expanded_details_and_selected_asin_image(self):
+        html='''<input id="ASIN" value="B0H7PWTPTV"><span id="productTitle">Squishy</span>
+        <div id="productDetails_expanderTables_depthLeftSections"><table><tr><th>Brand Name</th><td>LAVKUHY</td></tr></table></div>
+        <img id="landingImage" src="https://example.com/small.jpg" data-old-hires="https://example.com/large.jpg">
+        <div data-hook="review" id="empty"><div data-hook="review-body"> </div></div>'''
+        result=parse_detail(html,'https://www.amazon.com/dp/B0H7PWTPTV','B0H7PWTPTV')
+        self.assertEqual(result['brand'],'LAVKUHY')
+        self.assertEqual(result['image_asin'],'B0H7PWTPTV')
+        self.assertEqual(result['image_scope'],'selected_asin')
+        self.assertEqual(result['image_url'],'https://example.com/large.jpg')
+        self.assertEqual(result['reviews'],[])
+        result=parse_detail(html.replace('id="ASIN"','id="other"'),'https://www.amazon.com','B0H7PWTPTV')
+        self.assertIsNone(result['image_asin'])
+        self.assertEqual(result['image_scope'],'product')
+
 
 if __name__=='__main__': unittest.main()

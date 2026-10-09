@@ -9,7 +9,7 @@ export function readAmazonDetail(productId) {
   const asin = document.querySelector('input#ASIN')?.value;
   if (asin && asin !== productId) throw Error('详情页商品 ID 与榜单商品不一致');
   const attributes = {};
-  document.querySelectorAll('#productOverview_feature_div tr, #productDetails_techSpec_section_1 tr, #productDetails_detailBullets_sections1 tr').forEach(row => {
+  document.querySelectorAll('#productOverview_feature_div tr, #productDetails_techSpec_section_1 tr, #productDetails_detailBullets_sections1 tr, #productDetails_expanderTables_depthLeftSections tr').forEach(row => {
     const cells = [...row.children].filter(n => ['TD','TH'].includes(n.tagName));
     if (cells.length === 2) attributes[text(cells[0])?.replace(/[:\s\u200e\u200f]+$/g,'')] = text(cells[1]);
   });
@@ -33,10 +33,11 @@ export function readAmazonDetail(productId) {
   const ratingRaw=ratingNode?.getAttribute('title') || text(ratingNode) || '';
   const ratingValue=ratingRaw.match(/\d+[.,]?\d*/)?.[0];
   const image=document.querySelector('#landingImage, #imgBlkFront');
-  return {title,brand:attributes.Brand || attributes['品牌'] || bylineBrand || null,listed_at:attributes['Date First Available'] || attributes['上架时间'] || null,
+  const imageAsin=image && asin===productId ? asin : null;
+  return {title,brand:attributes.Brand || attributes['Brand Name'] || attributes['品牌'] || bylineBrand || null,listed_at:attributes['Date First Available'] || attributes['上架时间'] || null,
     rating:ratingValue ? Number(ratingValue.replace(',','.')) : null,rating_raw:ratingRaw,
     listed_at_kind:'source_display',attributes,rating_count:count ? Number(count) : null,review_count:null,
-    image_url:image?.getAttribute('data-old-hires') || image?.src || null,image_scope:'product',
+    image_url:image?.getAttribute('data-old-hires') || image?.src || null,image_scope:imageAsin ? 'selected_asin' : 'product',image_asin:imageAsin,
     displayed_sales_message:text(document.querySelector('#social-proofing-faceout-title-tk_bought')),
     reviews,detail_source:location.href};
 }

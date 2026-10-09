@@ -1,17 +1,23 @@
 # 配置与报告数据
 
+数量口径：配置与报告顶层 `unique_product_target=200`，表示合计 200 个不重复商品。同一 Amazon 市场按 ASIN 去重，商品 id 使用 `amazon:US:ASIN`，保留各榜单来源和排名。单来源 target 为采集上限，当前两榜各 100；报告分别展示来源覆盖与合并后实际数量、缺口。补充来源需用户配置，不能把子类目排名当全类目排名。
+
+详情主图在页面 `input#ASIN` 与榜单 ASIN 一致时，记录 `image_scope="selected_asin"`、`image_asin` 及 `image_url`，报告必须保留并显示该关联。未取得明确 ASIN 时仍标为 `product`。这表示当前选中 ASIN 的主图，不表示已取得卖家内部 SKU 编号或全部变体图片。
+
+2026-10-09 当前目标更新：仅启用 Amazon；销量使用 `displayed_sales_message` 的来源原文，报告不要求拆分日周月销量。关键词使用 `keywords: [{"en":"latex balloons","zh":"乳胶气球"}]`；由 Codex 根据真实页面内容提取并翻译。下方历史样例中的日周月指标和上架时间不再是本轮必填目标，历史数据仍可读取。
+
 配置示例（不是用户已选择值）：
 
 ```json
-{"country":"US","timezone":"Asia/Shanghai","daily_time":null,"engine":"python","sources":[{"platform":"amazon","list":"best_sellers","url":"<user-url>","target":200}]}
+{"country":"US","timezone":"Asia/Shanghai","daily_time":null,"engine":"python","unique_product_target":200,"sources":[{"platform":"amazon","list":"best_sellers","url":"<user-url>","target":100}]}
 ```
 
 报告输入由 Codex 基于真实采集数据写入：
 
 ```json
 {
-  "title": "玩具选品日报", "country": "US", "collected_at": "ISO timestamp",
-  "sources": [{"name":"Amazon Best Sellers","url":"https://...","target":200,"count":100,"note":"实际覆盖与缺口"}],
+  "unique_product_target": 200, "title": "玩具选品日报", "country": "US", "collected_at": "ISO timestamp",
+  "sources": [{"name":"Amazon Best Sellers","url":"https://...","target":100,"count":100,"note":"实际覆盖与缺口"}],
   "products": [{"id":"amazon:US:ASIN","platform":"amazon","product_id":"ASIN","title":"Observed title","rank":1,"source":"Amazon Best Sellers","url":"https://...","image_url":null,"image_scope":"product","brand":null,"listed_at":null,"rating":null,"review_count":null,"sales_day":null,"sales_week":null,"sales_month":null,"keywords":[],"missing_reason":"缺失原因"}],
   "reviews": [{"id":"review-id","product_id":"amazon:US:ASIN","text":"Actual review","rating":5,"date":null,"url":"https://..."}],
   "positive": [{"phrase":"易于组装","review_ids":["review-id"]}], "negative": [],
