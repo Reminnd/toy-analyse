@@ -35,4 +35,8 @@
 
 ## 详情补充字段
 
+`pricing` 包含 `current_price`、`reference_price`、`currency`、`currency_symbol`、`reference_label`、`source`、`discount_percent`。未观察到的值为null；参考价未必是原价，以原标签为准。当前售价不能直接称活动价。仅参考价大于当前价时计算 `(reference_price-current_price)/reference_price*100`。USD价格分布只统计USD样本，不跨币种混算，不将单价解释为订单客单价。
+
+`gallery` 是 `{url,image_role,asin,scope:"selected_asin",source}` 数组，`image_role` 为 MAIN/PT01 等图片位置。只接受当前详情ASIN及主图资产匹配的图集，缺失时为空数组；不代表卖家内部SKU或全部变体。`gallery_status` 为 embedded_initial 或 not_observed。报告可保存 `expanded_at`，区分详情刷新时间与榜单原始时间。
+
 两种详情解析器返回 `attributes`（原字段名与原单位）及 `feature_bullets`（About this item 原文，仅作为分析输入）。报告商品可以包含 `specifications: {"Material":"Clay","Manufacturer recommended age":"3 years and up"}` 和 `feature_summary`（Codex基于实际详情写的简短中文概述）。渲染器在商品行提供展开区。只写页面明确提供的规格；商品文案不作为已证实效果，公开报告使用简要概述而非复制完整营销段落。

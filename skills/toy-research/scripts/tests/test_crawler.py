@@ -13,6 +13,30 @@ from session_state import load_state
 
 
 class CrawlerTests(unittest.TestCase):
+    def test_price_comparison_ignores_unit_price_and_credit_offer(self):
+        html = '''<input id="ASIN" value="B000000001"><span id="productTitle">Toy</span>
+        <div id="corePriceDisplay_desktop_feature_div">
+        <span class="priceToPay"><span class="a-price-symbol">$</span><span class="a-price-whole">13.</span><span class="a-price-fraction">99</span></span>
+        <span class="basisPrice">List Price: <span class="a-text-price"><span class="a-offscreen">$19.99</span></span></span>
+        <span class="apex-priceperunit-value">$0.99 / count</span></div><div>Credit offer $0.00</div>'''
+        price = parse_detail(html,'https://www.amazon.com/dp/B000000001','B000000001')['pricing']
+        self.assertEqual(price['current_price'],13.99)
+        self.assertEqual(price['reference_price'],19.99)
+        self.assertEqual(price['currency'],'USD')
+        self.assertAlmostEqual(price['discount_percent'],30.02)
+
+    def test_gallery_requires_matching_current_main_image(self):
+        images = [{'hiRes':'https://m.media-amazon.com/images/I/main._SL1500_.jpg','variant':'MAIN'},
+                  {'hiRes':'https://m.media-amazon.com/images/I/side._SL1500_.jpg','variant':'PT01'}]
+        html = '<input id="ASIN" value="B000000001"><span id="productTitle">Toy</span>'
+        html += '<img id="landingImage" src="https://m.media-amazon.com/images/I/main._SX400_.jpg">'
+        html += "<script>var data={'colorImages': { 'initial': A.$.parseJSON('"+json.dumps(images)+"')}};</script>"
+        result = parse_detail(html,'https://www.amazon.com/dp/B000000001','B000000001')
+        self.assertEqual(len(result['gallery']),2)
+        self.assertEqual(result['gallery'][1]['asin'],'B000000001')
+        mismatched = html.replace('/main._SX400_', '/other._SX400_')
+        self.assertEqual(parse_detail(mismatched,'https://www.amazon.com/dp/B000000001','B000000001')['gallery'],[])
+
     def test_feature_bullets_are_scoped_and_deduplicated(self):
         html = '''<input id="ASIN" value="B000000001"><span id="productTitle">Toy</span>
         <div id="feature-bullets"><ul><li><span class="a-list-item">Portable play</span></li>
