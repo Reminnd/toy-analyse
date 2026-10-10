@@ -4,10 +4,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from report_visuals import dashboard
-from report import render
+from report import render, sales_display
 
 
 class VisualReportTests(unittest.TestCase):
+    def test_sales_display_preserves_lower_bound_and_source_period(self):
+        self.assertEqual(sales_display('7K+ bought in past month'),'7K+（月）')
+        self.assertEqual(sales_display('200+ bought in past week'),'200+（周）')
+        self.assertEqual(sales_display(None),'—（缺失）')
+        self.assertEqual(sales_display('100 sold'),'100 sold（周期未识别）')
+
     def test_keywords_are_not_truncated_and_duplicates_count_once(self):
         terms=[{'en':f'term {i}','zh':f'词{i}','category':'play'} for i in range(35)]
         result=dashboard([{'id':'a','title':'Toy','keywords':terms+[terms[0]]}])

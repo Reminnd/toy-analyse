@@ -35,6 +35,8 @@
 
 ## 详情补充字段
 
+商品表的“销量”展示可将 `7K+ bought in past month` 简写为 `7K+（月）`，保留数量下界符号“+”；week/day分别标为周/日。缺失展示 `—（缺失）`，未识别文案保留原文并注明周期未识别。JSON仍保留 `displayed_sales_message` 原文，HTML悬停展示原文。“月”对应来源past month，不转换为自然月或精确销量。
+
 标题关键词 `keywords` 为一商品多词，每项含 `en`、`zh`、`category`。维度为 product_type（品类）、play（玩法）、feature（特征）、material（材质）、use_case（场景/用途）、audience（人群）、theme（主题）、ip（IP）。先由Codex逐标题语义提取及统一同义词，再按去重ASIN计数；商品覆盖率分母为本次全部去重商品数，不因关键词缺失缩小。旧输入无category时展示为其他。报告展示全量词表与维度词云，不截取前24项作为全部结果。
 
 `pricing` 包含 `current_price`、`reference_price`、`currency`、`currency_symbol`、`reference_label`、`source`、`discount_percent`。未观察到的值为null；参考价未必是原价，以原标签为准。当前售价不能直接称活动价。仅参考价大于当前价时计算 `(reference_price-current_price)/reference_price*100`。USD价格分布只统计USD样本，不跨币种混算，不将单价解释为订单客单价。

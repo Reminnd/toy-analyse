@@ -2,9 +2,20 @@
 import argparse
 import html
 import json
+import re
 from pathlib import Path
 from urllib.parse import urlparse
 from report_visuals import dashboard, STYLE, INTERACTION
+
+
+def sales_display(message):
+    if not message:
+        return '—（缺失）'
+    match = re.fullmatch(r'([\d,.]+\s*[KMB]?\+?)\s+bought in (?:the )?past (month|week|day)', message.strip(), re.I)
+    if match:
+        period = {'month':'月','week':'周','day':'日'}[match[2].lower()]
+        return f'{match[1]}（{period}）'
+    return f'{message}（周期未识别）'
 
 
 def esc(value):
@@ -89,7 +100,7 @@ def render(data):
         picture = f'<img src="{esc(image)}" alt="商品图" loading="lazy">' if image and urlparse(image).scheme in ("http", "https") else '<span>图片缺失</span>'
         if p.get('image_asin'):
             picture += f'<small>ASIN {esc(p["image_asin"])}</small>'
-        sales = esc(p.get('displayed_sales_message'))
+        sales = f'<span class="sales-value" title="{esc(p.get("displayed_sales_message") or "来源未提供销量")}">{esc(sales_display(p.get("displayed_sales_message")))}</span>'
         pricing = p.get('pricing') or {}
         current = pricing.get('current_price')
         price_cell = f'<span class="price-value">{esc(pricing.get("currency") or pricing.get("currency_symbol") or "币种未知")} {current:.2f}</span>' if current is not None else '未取得'
@@ -105,14 +116,14 @@ def render(data):
     review_rows = ''.join(f'<tr><td>{esc(r["id"])}<small>{esc(r["product_id"])}</small></td><td>{esc(r["text"])}<small>{"原文摘录" if r.get("is_excerpt") else "原文"} · {esc(r.get("sampling",""))}</small></td><td>{esc(r.get("rating"))}</td><td>{link(r.get("url"),r.get("date") or "原始评论")}</td></tr>' for r in reviews)
 
     return f'''<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>{esc(data.get("title","玩具选品报告"))}</title>
-<style>body{{font:15px/1.7 system-ui,"Microsoft YaHei";color:#203c32;background:#f2f4ee;margin:0}}main{{max-width:1400px;margin:auto;padding:32px}}header{{background:#1e4537;color:white;padding:30px;border-radius:14px}}section{{background:white;padding:25px;border-radius:12px;margin-top:22px}}h1{{margin:0}}h2{{font-size:20px}}p{{white-space:pre-wrap}}a{{color:#2d684d}}small,.muted{{display:block;color:#738075;font-size:12px}}table{{border-collapse:collapse;width:100%;font-size:13px}}th,td{{text-align:left;padding:12px;border-bottom:1px solid #e3e9df;vertical-align:top}}img{{width:64px;height:70px;object-fit:contain}}.pair{{display:grid;grid-template-columns:1fr 1fr;gap:24px}}.cloud{{min-height:160px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px;padding:20px;color:#2b754a}}.negative .cloud{{color:#ae5839}}.cloud span{{overflow-wrap:anywhere}}.scroll{{overflow:auto}}article{{border-left:3px solid #719568;padding:0 20px;margin:25px 0}}@media(max-width:750px){{main{{padding:12px}}.pair{{display:block}}}}{STYLE}</style></head><body><main>
+<style>body{{font:15px/1.7 system-ui,"Microsoft YaHei";color:#30251f;background:#fff8f2;margin:0}}main{{max-width:1400px;margin:auto;padding:32px}}header{{background:linear-gradient(115deg,#f25b05,#ff8a24);box-shadow:0 8px 24px #ef70151a;color:white;padding:30px;border-radius:14px}}section{{background:white;border:1px solid #f4e6d9;box-shadow:0 4px 18px #aa5a1206;padding:25px;border-radius:12px;margin-top:22px}}h1{{margin:0}}h2{{font-size:20px}}p{{white-space:pre-wrap}}a{{color:#b94700}}small,.muted{{display:block;color:#80736b;font-size:12px}}table{{border-collapse:collapse;width:100%;font-size:13px}}th,td{{text-align:left;padding:12px;border-bottom:1px solid #f2e5da;vertical-align:top}}img{{width:64px;height:70px;object-fit:contain}}.pair{{display:grid;grid-template-columns:1fr 1fr;gap:24px}}.cloud{{min-height:160px;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:16px;padding:20px;color:#b94d06}}.negative .cloud{{color:#7e4939}}.cloud span{{overflow-wrap:anywhere}}.scroll{{overflow:auto}}article{{border-left:3px solid #ff922e;padding:0 20px;margin:25px 0}}@media(max-width:750px){{main{{padding:12px}}.pair{{display:block}}}}{STYLE}</style></head><body><main>
 <header><h1>{esc(data.get("title","玩具选品报告"))}</h1><div>{esc(data.get("country"))} · {esc(data.get("collected_at"))}</div></header>
 <section><h2>数据覆盖</h2><ul>{sources}</ul><p>{esc(coverage)} 评论样本 {len(reviews)} 条。各榜单独立计数，跨榜重复 ASIN 仅计入主表一次；字段缺失不等于 0。合并商品集不代表单个官方 Top 200 榜单。</p></section>
 {dashboard(products)}
 <section><h2>AI 选品分析</h2><p>{esc(data.get("summary","未生成分析"))}</p>{recommendations}</section>
 <section><h2>评论洞察与词云</h2><div class="pair"><div><h3>正面主题</h3>{cloud(data.get("positive",[]),len(reviews))}</div><div class="negative"><h3>负面主题</h3>{cloud(data.get("negative",[]),len(reviews))}</div></div></section>
 
-<section><h2>商品明细</h2><input id="product-search" class="search-box" placeholder="筛选标题、品牌或中英文关键词" aria-label="筛选商品"><div class="scroll"><table id="product-table"><tr><th>图片</th><th>商品</th><th>品牌</th><th>评分</th><th>当前售价 / 参考价</th><th>销量原文</th><th>关键词（English / 中文）与缺失说明</th></tr>{''.join(cards)}</table></div></section>
+<section><h2>商品明细</h2><input id="product-search" class="search-box" placeholder="筛选标题、品牌或中英文关键词" aria-label="筛选商品"><div class="scroll"><table id="product-table"><tr><th>图片</th><th>商品</th><th>品牌</th><th>评分</th><th>当前售价 / 参考价</th><th>销量</th><th>关键词（English / 中文）与缺失说明</th></tr>{''.join(cards)}</table></div></section>
 <section><h2>评论证据</h2><div class="scroll"><table><tr><th>评论与商品 ID</th><th>原文</th><th>星级</th><th>来源</th></tr>{review_rows}</table></div></section></main>{INTERACTION}</body></html>'''
 
 
