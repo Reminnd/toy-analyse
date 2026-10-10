@@ -1,4 +1,14 @@
-# toy-analyse
+# Product Research
+
+客户初始化包支持 Amazon 国家与大小类选择、本机设置窗口、可选 Codex 原生每日计划，以及可排序的 HTML 选品报告。国家与类目首次读取平台并缓存，后续由用户主动更新。包内不含个人账号、cookies、配置、历史报告或已启用计划。
+
+- [下载客户初始化 ZIP](releases/product-research-client.zip)
+- [客户安装与使用](product-research/README.md)
+- [Product Research Skill](product-research/skills/product-research/SKILL.md)
+
+下方保留早期玩具版本的说明和历史样例；新客户请使用上方 Product Research 包。
+
+## 早期 toy-analyse
 
 用于 Codex 的玩具选品 skill/plugin：配置国家、平台和榜单链接，优先使用 Python，必要时使用 Playwright，输出包含评论词云的 HTML/JSON 选品报告，并通过 Codex 原生 automation 定时执行。
 
@@ -20,7 +30,7 @@ node --test tests/sales.test.mjs
 
 浏览器脚本默认使用本机 Chrome。登录状态在本机工作目录保存，不提交 Cookie 或 API 密钥。定时任务由 Codex 创建，克隆仓库不会自动启动定时任务。
 
-## 当前状态
+## 历史样例状态
 
 两榜各100条，按ASIN去重后195个商品，保留5个缺口，不增加来源。2026-10-10补充194个详情，取得186个USD当前售价、69个参考价、192个商品图集，共1373个图片链接。榜单与20条语义分析评论样本沿用2026-10-09快照。
 

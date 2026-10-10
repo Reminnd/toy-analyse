@@ -1,0 +1,16 @@
+{
+  "platform": "amazon",
+  "country": null,
+  "marketplace": null,
+  "category_path": [],
+  "sources": [],
+  "engine": "python",
+  "unique_product_target": 200,
+  "supplemental_sources_allowed": false,
+  "shortfall_policy": "report",
+  "schedule_enabled": null,
+  "time": null,
+  "timezone": null,
+  "output_directory": null,
+  "format": "html"
+}
