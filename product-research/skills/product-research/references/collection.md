@@ -1,6 +1,17 @@
 # 采集与登录状态
 
-## 命令
+## 国家与类目绑定入口
+
+两端保存配置后，统一使用以下命令，不手工把美国/玩具 URL 写进调用：
+
+```text
+python scripts/collect.py --workspace <workspace> --source best_sellers --output <work/best.json>
+python scripts/collect.py --workspace <workspace> --source new_releases --output <work/new.json>
+```
+
+collect.py 先运行 settings 的 plan 校验，再将来源 URL、国家域名和最终类目键传给爬虫。Playwright 使用同一入口附加 --engine playwright；需要定向恢复再附加 --python-result。每个实际榜单分页都检查最终站点与类目，跨国家详情不合并。网页不是所有站点都一定提供相同榜单；新品地址派生后仍以实际访问为准。
+
+## 底层命令（调试用）
 
 安装 Python 依赖：`python -m pip install -r <skill>/scripts/requirements.txt`。
 需要浏览器时，在 scripts 目录执行 `npm ci`。浏览器脚本默认使用已安装的 Chrome；无 Chrome 时安装 Playwright Chromium 并使用 `--browser chromium`。脚本路径、输出路径含空格时按所在 shell 规则引号包裹。

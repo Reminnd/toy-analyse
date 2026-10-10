@@ -1,6 +1,6 @@
 {
   "name": "product-research",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Amazon 国家与品类设置、双爬虫采集及 HTML 选品分析",
   "author": {
     "name": "Local developer"
@@ -9,7 +9,7 @@
   "interface": {
     "displayName": "Product Research",
     "shortDescription": "配置研究范围并生成 Amazon 商品选品报告",
-    "longDescription": "提供本机设置窗口，缓存 Amazon 国家及分类选择；Python 优先采集，Playwright 补充，使用 Codex 原生定时与 AI 分析。",
+    "longDescription": "Codex 原生聊天选择与 ChatGPT MCP Apps 内嵌 HTML 表单；国家和类目绑定采集链接，Python 优先、Playwright 补充，输出选品分析。",
     "developerName": "Local developer",
     "category": "Productivity",
     "capabilities": [],

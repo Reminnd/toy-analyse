@@ -1,6 +1,6 @@
 # 配置与研究 JSON
 
-设置窗口创建 `product-research.config.json`：platform、country、marketplace、category_path、sources、engine、unique_product_target、schedule_enabled、time、timezone、output_directory、format。category_path 的每项保留 Amazon 原始 label、url 和 key。sources 为 `{name,url,target}` 数组，target 是单来源采集上限。可按实际需要添加 storage_state 和 delivery。未创建原生计划之前 schedule_enabled 只代表用户意图。
+聊天表单提交后创建 `product-research.config.json`：platform、country、marketplace、category_path、sources、engine、unique_product_target、schedule_enabled、time、timezone、output_directory、format。category_path 的每项保留 Amazon 原始 label、url 和 key。sources 为 `{name,list,url,target}` 数组，target 是单来源采集上限。可按实际需要添加 storage_state 和 delivery。未创建原生计划之前 schedule_enabled 只代表用户意图。
 
 研究 JSON 与渲染器的最小结构如下。以下占位符是字段说明，不能作为实际报告的数据：
 

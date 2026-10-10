@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Product Research 设置</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:20px;font:14px/1.6 system-ui,"Microsoft YaHei",sans-serif;background:#fff9f3;color:#39291f}main{max-width:760px;margin:auto}h1{font-size:24px;color:#ba4c0b;margin:0}p{margin:6px 0 20px;color:#796757}fieldset{border:1px solid #f1dec9;border-radius:12px;background:white;padding:18px;margin:16px 0}legend{font-weight:650;color:#984414}label{display:block;margin:10px 0 5px}select,input[type=text],input[type=time]{width:100%;padding:10px;border:1px solid #dbc7b4;border-radius:7px;background:white;color:inherit;font:inherit}input[type=checkbox]{accent-color:#e97522}.row{display:grid;grid-template-columns:1fr 1fr;gap:16px}button{padding:10px 16px;border:1px solid #e4c3a6;border-radius:8px;background:white;color:#9a4819;font:inherit;cursor:pointer}button:disabled{opacity:.5;cursor:default}.primary{background:#e96d13;color:white;border-color:#e96d13}small{display:block;color:#826c5b}.actions{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}.status{white-space:pre-wrap;margin:14px 0;color:#aa460a}#links a{display:block;overflow-wrap:anywhere;color:#a5480c;font-size:12px}#selected{padding:10px;background:#fff2e2;border-radius:8px}select:focus,input:focus,button:focus-visible{outline:2px solid #fa9a4e;outline-offset:2px}[hidden]{display:none!important}@media(max-width:520px){body{padding:12px}.row{grid-template-columns:1fr}}
+</style></head><body><main>
+<h1>Product Research</h1><p>选择国家与目标品类，生成可排序的 HTML 选品报告。</p>
+<form id="settings">
+<fieldset><legend>研究范围</legend>
+<div class="row"><div><label for="platform">目标平台</label><select id="platform"><option>Amazon</option></select></div><div><label for="country">目标国家</label><select id="country" required disabled><option value="">正在加载…</option></select></div></div>
+<label for="root-category">大类</label><select id="root-category" disabled required><option value="">先选择国家</option></select>
+<div id="subcategories"></div><p id="selected">尚未选择品类</p>
+<div class="actions"><button type="button" id="refresh-markets">更新国家列表</button><button type="button" id="refresh-categories" disabled>更新当前国家类目</button></div>
+<small>选项首次从 Amazon 获取；已缓存列表仅在点击更新时刷新。每级下拉包含该类自身及其直接下级。</small>
+</fieldset>
+<fieldset><legend>采集链接</legend><div id="links"></div>
+<label><input id="custom" type="checkbox"> 自定义同一国家、同一类目的榜单链接</label>
+<div id="custom-fields" hidden><label for="best-url">Best Sellers</label><input id="best-url" type="text"><label for="new-url">New Releases</label><input id="new-url" type="text"></div>
+<small>两榜合计目标 200 个不重复商品；公开范围不足或跨榜重复时保留实际缺口。</small></fieldset>
+<fieldset><legend>计划与报告</legend>
+<label><input type="checkbox" id="scheduled"> 启用每日原生计划</label>
+<div class="row"><div><label for="time">每日时间</label><input id="time" type="time" disabled></div><div><label for="timezone">时区</label><input id="timezone" type="text" placeholder="Asia/Shanghai" disabled></div></div>
+<label><input type="checkbox" id="default-output" checked> 保存到运行环境默认 outputs 目录</label>
+<label for="output">运行环境中的报告目录</label><input id="output" type="text" disabled placeholder="默认 outputs">
+<small>网页端下载 HTML 报告时，再由浏览器选择本机保存位置。填写服务器目录不等于授权浏览本机文件。</small>
+</fieldset>
+<div id="status" class="status" role="status" aria-live="polite">正在连接聊天表单…</div>
+<button id="save" class="primary" disabled type="submit">保存并继续</button>
+</form></main>
+<script>
+const $ = id => document.getElementById(id);
+let rpcId=0, markets=[], path=[], generation=0, busy=false, initialized=false;
+const pending=new Map();
+function notify(method,params){window.parent.postMessage({jsonrpc:'2.0',method,params},'*');}
+function rpc(method,params){return new Promise((resolve,reject)=>{const id=++rpcId;pending.set(id,{resolve,reject});window.parent.postMessage({jsonrpc:'2.0',id,method,params},'*');});}
+window.addEventListener('message',event=>{
+ if(event.source!==window.parent||event.data?.jsonrpc!=='2.0')return;
+ const message=event.data;
+ if(pending.has(message.id)){const promise=pending.get(message.id);pending.delete(message.id);message.error?promise.reject(Error(message.error.message)):promise.resolve(message.result);}
+});
+async function tool(name,args){const result=await rpc('tools/call',{name,arguments:args});if(result.isError)throw Error(result.content?.map(c=>c.text||'').join('\n')||'读取失败');return result.structuredContent;}
+function state(message){$('status').textContent=message;notify('ui/notifications/size-changed',{height:document.documentElement.scrollHeight});}
+function buttons(){ $('save').disabled=busy||!path.length; $('refresh-markets').disabled=busy||!initialized; $('refresh-categories').disabled=busy||!$('country').value; }
+function option(label,value){return new Option(label,value);}
+function showSelection(){
+ $('selected').textContent=path.length?'当前范围：'+path.map(p=>p.label).join(' › '):'尚未选择品类';
+ const market=markets.find(m=>m.country===$('country').value), category=path.at(-1);
+ const urls=category?[category.url,market.origin+'/gp/new-releases/'+category.key]:[];
+ $('links').replaceChildren(...urls.map((url,i)=>{const a=document.createElement('a');a.textContent=(i?'New Releases: ':'Best Sellers: ')+url;a.href=url;a.target='_blank';a.rel='noreferrer';return a;}));
+ if(!$('custom').checked){$('best-url').value=urls[0]||'';$('new-url').value=urls[1]||'';}
+ buttons();
+}
+async function marketsLoad(refresh=false){
+ busy=true;buttons();state('正在读取国家列表…');
+ try{
+  const data=await tool('product_research_settings',{refresh});markets=data.markets;
+  $('country').replaceChildren(option('选择国家',''),...markets.map(m=>option(m.label,m.country)));$('country').disabled=false;
+  const previous=data.previous||{};
+  if(!refresh){$('scheduled').checked=!!previous.schedule_enabled;$('time').value=previous.time||'';$('timezone').value=previous.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone;toggleSchedule();
+   if(previous.output_directory){$('default-output').checked=false;$('output').disabled=false;$('output').value=previous.output_directory;}
+   if(markets.some(m=>m.country===previous.country)){$('country').value=previous.country;await countryChanged(false,previous.category_path||[]);
+    const urls=(previous.sources||[]).map(s=>s.url);if(urls.length===2&&path.length&&(urls[0]!==$('best-url').value||urls[1]!==$('new-url').value)){$('custom').checked=true;$('custom-fields').hidden=false;$('best-url').value=urls[0];$('new-url').value=urls[1];}}
+  }else{path=[];$('subcategories').replaceChildren();$('root-category').replaceChildren(option('先选择国家',''));$('root-category').disabled=true;showSelection();}
+  state('请选择研究范围。已缓存选项不会自动更新。');
+ }catch(error){state(error.message);}finally{busy=false;buttons();}
+}
+async function countryChanged(refresh=false, restore=[]){
+ const current=++generation;path=[];$('custom').checked=false;$('custom-fields').hidden=true;$('subcategories').replaceChildren();showSelection();
+ $('root-category').replaceChildren(option('正在读取大类…',''));$('root-category').disabled=true;
+ if(!$('country').value){busy=false;$('root-category').replaceChildren(option('先选择国家',''));buttons();return;}
+ busy=true;buttons();state('正在读取所选国家的大类…');
+ try{
+  const data=await tool('product_research_categories',{country:$('country').value,category_keys:[],refresh});if(current!==generation)return;
+  $('root-category').replaceChildren(option('选择大类',''),...data.choices.map(c=>option(c.label,c.key)));$('root-category').disabled=false;
+  $('root-category').onchange=()=>{const item=data.choices.find(c=>c.key===$('root-category').value);selectCategory(item?[item]:[]);};
+  if(restore.length){const item=data.choices.find(c=>c.key===restore[0].key);if(item){$('root-category').value=item.key;await selectCategory([item],restore.slice(1));}}
+  else state('选择大类后，下一级可选大类自身或其中的小类。');
+ }catch(error){if(current===generation)state(error.message);}finally{if(current===generation){busy=false;buttons();}}
+}
+async function selectCategory(next,restore=[]){
+ const current=++generation;path=next;
+ for(const row of [...$('subcategories').children])if(Number(row.dataset.depth)>=path.length)row.remove();
+ if(!path.length){$('subcategories').replaceChildren();busy=false;showSelection();return;}
+ busy=true;showSelection();state('正在读取子类…');
+ try{
+  const data=await tool('product_research_categories',{country:$('country').value,category_keys:path.map(c=>c.key)});if(current!==generation)return;
+  const depth=path.length, row=document.createElement('div');row.dataset.depth=depth;
+  const label=document.createElement('label');label.textContent=data.parent.label+' · 选择范围';label.htmlFor='category-'+depth;
+  const select=document.createElement('select');select.id=label.htmlFor;
+  const group=document.createElement('optgroup');group.label=data.parent.label;
+  group.append(...data.choices.map(c=>option(c.is_self?c.label+'（该类自身）':c.label,c.key)));select.append(group);row.append(label,select);$('subcategories').append(row);
+  select.value=data.parent.key;
+  select.onchange=()=>{const item=data.choices.find(c=>c.key===select.value);const base=path.slice(0,depth);
+   if(item.is_self){generation++;path=base;for(const deeper of [...$('subcategories').children])if(Number(deeper.dataset.depth)>depth)deeper.remove();busy=false;showSelection();state('已选择 '+item.label+' 自身。');}
+   else selectCategory([...base,item]);};
+  if(restore.length){const item=data.choices.find(c=>!c.is_self&&c.key===restore[0].key);if(item){select.value=item.key;await selectCategory([...path,item],restore.slice(1));}}
+  else state('已加载该类目自身及其子类。保存后按所选范围生成链接。');
+ }catch(error){if(current===generation)state('子类读取失败，可选择当前类目自身：'+error.message);}finally{if(current===generation){busy=false;showSelection();}}
+}
+function toggleSchedule(){for(const id of ['time','timezone']){$(id).disabled=!$('scheduled').checked;$(id).required=$('scheduled').checked;}}
+$('scheduled').onchange=toggleSchedule;
+$('country').onchange=()=>countryChanged();
+$('refresh-markets').onclick=()=>marketsLoad(true);
+$('refresh-categories').onclick=()=>countryChanged(true);
+$('default-output').onchange=()=>{$('output').disabled=$('default-output').checked;$('output').required=!$('default-output').checked;};
+$('custom').onchange=()=>{$('custom-fields').hidden=!$('custom').checked;showSelection();};
+$('settings').onsubmit=async event=>{
+ event.preventDefault();if(busy||!path.length)return;busy=true;buttons();state('正在校验国家、类目与榜单链接…');
+ try{
+  const values={country:$('country').value,category_keys:path.map(c=>c.key),schedule_enabled:$('scheduled').checked,time:$('time').value,timezone:$('timezone').value,output_directory:$('default-output').checked?null:$('output').value};
+  if($('custom').checked)values.custom_sources=[$('best-url').value,$('new-url').value];
+  const result=await tool('product_research_save',values);
+  state('设置已保存。正在通知聊天助手继续采集；定时计划尚需原生工具落实。');
+  try{await rpc('ui/message',{role:'user',content:[{type:'text',text:'Product Research 设置已由我提交并保存。请读取配置 '+result.config_path+'，按所选国家和品类执行采集及 HTML 报告；依照 schedule_enabled 通过可用原生计划工具落实计划，不再弹出设置。'}]});}
+  catch(error){state('设置已保存。宿主未接受继续消息，请在聊天中输入“按已保存配置继续”。');}
+ }catch(error){state(error.message);}finally{busy=false;buttons();}
+};
+if(window.parent===window){state('此表单需通过 ChatGPT 已连接的 Product Research MCP 工具显示；直接打开文件无法连接聊天。');}
+else{rpc('ui/initialize',{appInfo:{name:'product-research-settings',version:'1.1.0'},appCapabilities:{},protocolVersion:'2026-01-26'}).then(()=>{notify('ui/notifications/initialized',{});initialized=true;return marketsLoad();}).catch(error=>state(error.message));}
+</script></body></html>

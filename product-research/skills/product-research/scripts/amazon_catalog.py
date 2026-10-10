@@ -92,6 +92,8 @@ class Catalog:
     def _read(self, key, url, parser, refresh=False):
         if key not in self.data or refresh:
             html, final_url = self.fetch(url)
+            if parser is parse_categories and category_key(url) and category_key(final_url) != category_key(url):
+                raise ValueError('分类页面跳转到其他类目；不更新所选类目的选项。')
             items = parser(html, final_url)
             self.data[key] = {'items': items, 'source': final_url,
                               'fetched_at': datetime.now(timezone.utc).isoformat()}

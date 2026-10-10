@@ -12,6 +12,7 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from amazon_detail import parse_detail, AmazonVerificationRequired
 from session_state import load_state
+from settings import validate_scope
 
 
 class PageAccessError(ValueError):
@@ -122,7 +123,7 @@ def parse_page(html, url, platform, country):
     }
 
 
-def crawl(url, platform, country, limit=200, details=False, storage_state=None):
+def crawl(url, platform, country, limit=200, details=False, storage_state=None, scope=None):
     source_url = url
     if platform not in ("amazon", "temu", "tiktok", "aliexpress"):
         raise ValueError("此 Python 爬虫尚未适配该平台")
@@ -147,11 +148,13 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None):
             pagination_error = str(error)
             break
         try:
+            if scope:
+                validate_scope(response.url, scope['market'], scope['category'], scope.get('list'))
             data = parse_page(response.text, response.url, platform, country)
-        except PageAccessError as error:
+        except ValueError as error:
             if not products and not unresolved: raise
             pagination_error=str(error)
-            collection_stop={'phase':'pagination','url':response.url,'code':error.code,'reason':str(error)}
+            collection_stop={'phase':'pagination','url':response.url,'code':getattr(error, 'code', 'scope_mismatch'),'reason':str(error)}
             break
         pages.append({"url": response.url, "declared": len(data["products"]),"rendered_titles":sum(bool(p['title']) for p in data['products'])})
         delivery = data["delivery"] or delivery
@@ -172,6 +175,8 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None):
                     print('补齐内嵌榜单商品 '+key,file=sys.stderr)
                     detail_response = session.get(product['product_url'],timeout=40)
                     detail_response.raise_for_status()
+                    if scope and urlparse(detail_response.url).hostname != urlparse(scope['market']['origin']).hostname:
+                        raise ValueError('详情页跳转到其他国家；不合并该详情。')
                     product.update(parse_detail(detail_response.text,detail_response.url,key))
                 except (ValueError, requests.RequestException) as error:
                     unresolved.append({**product, 'error':str(error)})
@@ -196,6 +201,8 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None):
             try:
                 response = session.get(product['product_url'], timeout=40)
                 response.raise_for_status()
+                if scope and urlparse(response.url).hostname != urlparse(scope['market']['origin']).hostname:
+                    raise ValueError('详情页跳转到其他国家；不合并该详情。')
                 detail = parse_detail(response.text, response.url, product['product_id'])
                 product.update({key:value for key,value in detail.items() if value is not None})
                 product['detail_missing'] = [key for key in ['brand','listed_at','reviews'] if not detail.get(key)]

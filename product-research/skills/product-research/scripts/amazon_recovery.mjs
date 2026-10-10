@@ -1,5 +1,6 @@
 import { readAmazonDetail } from './amazon_detail.mjs';
 import { recoverListCard } from './amazon_list_card.mjs';
+import { validateSourceScope } from './source_scope.mjs';
 
 // Consume declared ASINs only; a source-range shortfall is not a retry queue.
 export async function recoverAmazon(page, original, source, country, progress) {
@@ -25,8 +26,10 @@ export async function recoverAmazon(page, original, source, country, progress) {
       if (listOnly) {
         // Python already proved the detail is another variant. Do not request it again.
         detail = await recoverListCard(page, original, candidate);
+        validateSourceScope(page.url(), source);
       } else {
         await page.goto(candidate.product_url, {waitUntil:'domcontentloaded',timeout:45000});
+        validateSourceScope(page.url(), source, true);
         detail = await page.evaluate(readAmazonDetail, asin);
       }
       attempt.url = page.url();

@@ -1,31 +1,27 @@
 ---
 name: product-research
-description: 启动 Product Research，打开国家、品类、定时与保存位置设置窗口；使用 Python 优先、Playwright 补充采集 Amazon 热销与新品榜单，分析价格、品牌、双语关键词、销量及评论，生成可排序的 HTML 选品报告。
+description: 启动 Product Research，通过 Codex 原生聊天选择或 ChatGPT HTML 表单配置国家、品类、定时与保存位置；使用 Python 优先、Playwright 补充采集 Amazon 热销与新品榜单，分析价格、品牌、双语关键词、销量及评论，生成可排序的 HTML 选品报告。
 ---
 
 # Product Research
 
-## 启动设置窗口
+## 聊天内启动设置
 
-用户每次输入“启动 Product Research”或要求重新选择研究范围时，都运行本 skill 的 `scripts/setup.py`，等待用户实际保存或取消。先确认 Python 3.12+、Tkinter、`scripts/requirements.txt` 依赖可用；首次缺少时安装。路径相对本 SKILL.md，workspace 使用当前任务目录，timezone 使用客户端提供的时区，不用目标国家推断用户时区。
+用户明确启动 Product Research 或要求修改研究范围时，先阅读 [references/chat-setup.md](references/chat-setup.md)。Codex 使用当前宿主的原生用户输入工具展示选择与填写；ChatGPT 官方网页使用已连接 MCP Apps 服务的 HTML 内嵌表单。不要再打开独立桌面设置窗口。自动定时执行只读取已有配置，不弹设置。
 
-```text
-python scripts/setup.py --workspace <当前任务绝对目录> --timezone <客户端IANA时区>
-```
+两端共用 scripts/settings.py：markets 获取国家，categories 获取该国家/父类下的实际类目，save 校验并保存用户已提交的回答，plan 验证用于采集的最终来源。国家、类目首次读取 Amazon 并缓存到工作目录，之后只按用户明确要求更新。大类和每级子类的选择列表都同时包含该类自身和直接下级。未选择/取消不保存、不创建计划、不启动采集。
 
-这是独立本机设置窗口，不是 Codex 内嵌下拉组件。窗口需要可用桌面。用户操作是必要输入：进程运行期间保留等待，不自行填写或点击保存。取消时不采集、不更改计划。窗口写入 workspace 下的 `product-research.config.json`，成功返回 `saved=true`。已有客户配置仅预填，仍展示窗口。自动定时触发只读取配置执行，不弹设置窗口。
+选择国家绑定实际站点域名，选择类目绑定该站点分类树的 key、url 和路径。用户换国家必须重选类目。热销与新品链接从最终选择派生，不能沿用旧国家/大类链接；自定义两榜链接也必须通过相同范围校验。首次真实访问还需检查最终 URL、榜单类型、页面标题及配送地区。没有原生 UI 或 MCP 连接时说明具体限制，不把 HTML 文件或独立窗口冒充聊天内组件。
 
-窗口提供 Amazon 平台、国家下拉、逐级类目下拉（上级可选“全部”）、自定义两榜链接、定时复选框及时间/时区、默认目录复选框及本机文件夹浏览。国家列表读取 Amazon 国家选择器；类目逐级读取该站实际榜单导航，首次进入某个节点获取一次，缓存到 `work/product-research-catalog.json`。以后复用缓存，仅用户点击更新按钮或明确要求更新时刷新。分类数量大，不预抓整个网站；从未打开的下级节点按需首次加载。缓存包含来源和获取时间，不随客户包分发。
-
-读取失败时保留错误；用正常 Playwright 浏览器检查原页面，必要时让用户完成登录。可以保存正常浏览器读取的 HTML，通过 `Catalog` 的同一解析器写入缓存，再重开设置窗口。不能用自编国家/类目列表替代平台数据。某国家有商城入口，不代表它提供相同榜单或所有字段。新品链接由所选类目键生成，是待验证地址；运行时核对最终 URL、页面标题和类目，错误重定向不能算该类目的结果。
+配置与缓存保存于当前任务目录，不复制到客户包。环境需要 Python 3.12+ 与 scripts/requirements.txt；浏览器及 MCP 服务需要 scripts/package.json 中的依赖。ChatGPT MCP 服务只保存设置，不自建定时任务；真实网页接入需要客户自己的 HTTPS 地址与连接权限。
 
 ## 保存后的执行与计划
 
 读取 [references/collection.md](references/collection.md) 执行一轮采集；读取 [references/data-contract.md](references/data-contract.md) 准备报告。仅启用 Amazon。API 不预设可用：客户有平台服务且提供文档和环境变量名称时才接入；不要要求客户在聊天中发送密钥。没有 API 可先使用原站。遇到实际登录需求才提示用户在正常浏览器登录。
 
-`schedule_enabled=true` 且时间时区有效时，发现并使用 Codex 原生 `automation_update` 创建或更新当前任务的 heartbeat。用户保存设置中的启用选择即为授权，无需重复确认。先检查本机 automations 的配置，按本配置绝对路径找到对应 Product Research 计划，优先更新，不重复创建；不影响其他计划。未勾选时暂停与本配置对应的旧计划，新用户不创建计划。设置窗口本身不创建定时任务。
+`schedule_enabled=true` 且时间时区有效时，发现并使用 Codex 原生 `automation_update` 创建或更新当前任务的 heartbeat。用户提交设置中的启用选择即为授权，无需重复确认。先检查本机 automations 的配置，按本配置绝对路径找到对应 Product Research 计划，优先更新，不重复创建；不影响其他计划。未勾选时暂停与本配置对应的旧计划，新用户不创建计划。表单本身不创建定时任务。
 
-原生计划使用工具支持的时间语义。计划时区不同于用户所选时区时先确认工具能力；支持时换算并记录，涉及夏令时不能永久使用固定 UTC 偏移冒充本地时间。工具未成功不能声称已启用，写入 `work/product-research-state.json` 的 schedule 状态。提示文本包含：使用 `$product-research`、配置文件绝对路径、这是自动执行不要打开设置窗口、读取最新配置、真实采集、HTML 报告路径及覆盖缺口。每日新报告通知用户；无变化的相同阻塞不重复通知。不得创建自有 scheduler 或系统计划代替原生计划。
+原生计划使用工具支持的时间语义。计划时区不同于用户所选时区时先确认工具能力；支持时换算并记录，涉及夏令时不能永久使用固定 UTC 偏移冒充本地时间。工具未成功不能声称已启用，写入 `work/product-research-state.json` 的 schedule 状态。提示文本包含：使用 `$product-research`、配置文件绝对路径、这是自动执行不要再次询问设置、读取最新配置、真实采集、HTML 报告路径及覆盖缺口。每日新报告通知用户；无变化的相同阻塞不重复通知。不得创建自有 scheduler 或系统计划代替原生计划。
 
 ## 分析与报告
 
