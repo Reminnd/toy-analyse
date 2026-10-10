@@ -34,7 +34,7 @@ node scripts/playwright_crawler.mjs --platform amazon --country <country> --url 
 
 可附加同一 `--storage-state`。首次 Python 完全未取得结果时省略 `--python-result`，正常读取两榜。检查浏览器结果的配送地区、恢复次数、原始排名和 ASIN 一致性后再合并。合并按市场+ASIN，并保留来源关联；新数据字段不应被另一来源空值覆盖。
 
-`collection_stop` 出现时停止该来源 HTTP 请求；可以用同一用户会话做一次正常浏览器检查。浏览器也要求验证/登录时等待用户处理，不循环刷新，不规避验证。当前请求失败不删除已取得的数据。已采尽的公开范围不重复请求以期凑够 200。
+`collection_stop.code=browser_challenge` 或首个榜单抛出同类异常时，collect.py 保存当前结果，并自动执行 verify_session.mjs，使用现有会话打开可见 Chrome。用户手动验证后，脚本观察到正常页面即保存新会话，无需终端输入，再续采一次。关闭浏览器则停止；续采仍受阻不再次弹窗。验证前快照保存在 *-before-verification.json，合并分析时保留其中未被新结果覆盖的商品与详情。不要自动点击验证控件、解验证码或循环刷新。已采尽的公开范围不重复请求以期凑够 200。
 
 ## 登录快照
 

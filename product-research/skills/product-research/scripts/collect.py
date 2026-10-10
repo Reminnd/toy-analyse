@@ -9,6 +9,50 @@ from python_crawler import crawl
 from settings import execute
 
 
+def collect_python(source, config, state, output, config_path):
+    scope = {'market': config['marketplace'], 'category': config['category_path'][-1], 'list': source['list']}
+    def fetch(session):
+        return crawl(source['url'], 'amazon', config['country'], source['target'], True, session, scope=scope)
+    try:
+        result = fetch(state)
+    except ValueError as error:
+        if getattr(error, 'code', None) != 'browser_challenge':
+            raise
+        result = {'source_url': source['url'], 'products': [], 'collection_stop':
+                  {'code': 'browser_challenge', 'url': source['url'], 'reason': str(error)}}
+    output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+    stop = result.get('collection_stop') or {}
+    if stop.get('code') != 'browser_challenge':
+        return result
+    previous = output.with_name(output.stem + '-before-verification.json')
+    previous.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+    session = Path(config_path).parent / 'work/.auth' / ('amazon-' + config['country'] + '-verified.json')
+    command = ['node', str(Path(__file__).with_name('verify_session.mjs')), '--url', stop.get('url') or source['url'],
+               '--output', str(session)]
+    if state:
+        command += ['--storage-state', str(state)]
+    verified = subprocess.run(command)
+    if verified.returncode != 0:
+        result['verification_status'] = 'cancelled_or_failed'
+    else:
+        config['storage_state'] = str(session)
+        for configured in config['sources']:
+            if configured['list'] == source['list'] and configured.get('storage_state'):
+                configured['storage_state'] = str(session)
+        Path(config_path).write_text(json.dumps(config, ensure_ascii=False, indent=2), encoding='utf-8')
+        try:
+            resumed = fetch(str(session))
+            # Preserve the first snapshot even if the retry returns less data.
+            resumed['previous_result'] = str(previous)
+            resumed['verification_status'] = 'completed'
+            result = resumed
+        except Exception as error:
+            result['verification_status'] = 'retry_failed'
+            result['retry_error'] = str(error)
+    output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--workspace', required=True)
@@ -27,10 +71,10 @@ def main():
     output = Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     if args.engine == 'python':
-        result = crawl(source['url'], 'amazon', config['country'], source['target'], True, state,
-                       scope={'market': config['marketplace'], 'category': plan['category_path'][-1], 'list': source['list']})
-        output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
+        result = collect_python(source, config, state, output, plan['config_path'])
         print(json.dumps({'output': str(output), 'count': len(result['products'])}))
+        if result.get('collection_stop'):
+            return 2
     else:
         command = ['node', str(Path(__file__).with_name('playwright_crawler.mjs')), '--platform', 'amazon',
                    '--country', config['country'], '--url', source['url'], '--limit', str(source['target']),
@@ -45,4 +89,4 @@ def main():
 
 if __name__ == '__main__':
     sys.stdout.reconfigure(encoding='utf-8')
-    main()
+    raise SystemExit(main())

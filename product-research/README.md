@@ -6,7 +6,7 @@ Amazon 国家与大小类选择、Python 优先 / Playwright 补充采集，以�
 
 把 `skills/product-research` 复制到客户自己的 `$CODEX_HOME/skills/`（默认用户目录 `.codex/skills/`），安装 scripts/requirements.txt 依赖，在 Codex 中输入 **启动 Product Research**。未发现新 skill 时重新打开任务或 Codex。不要同时装两份同名 skill。
 
-启动时打开本机独立设置窗口，提供可滚动国家下拉框、大小类级联下拉框、定时填写和文件夹选择器。保存后继续采集；取消不启动。国家和品类从 Amazon 读取并缓存，每次显式启动均可修改；自动任务读取已保存配置。
+启动时打开本机独立设置窗口，提供可滚动国家下拉框、大小类级联下拉框、定时填写和文件夹选择器。保存后自动开始两榜采集并由 Codex 继续分析生成报告；取消不启动。遇到 Amazon 验证自动弹出可见浏览器，用户手动验证后自动保存会话并续采一次。关闭验证浏览器则停止并保留已有数据。国家和品类从 Amazon 读取并缓存，每次显式启动均可修改；自动任务读取已保存配置。
 
 环境：Python 3.12+（含 Tkinter）、Node.js 20+；需要浏览器或 ChatGPT 组件时，在 scripts 目录运行 `npm ci`。浏览器采集默认 Chrome，也可使用 Playwright Chromium。
 
