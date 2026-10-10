@@ -81,7 +81,7 @@ def parse_detail(html, url, product_id):
             if gallery:
                 break
     sales = soup.select_one('#social-proofing-faceout-title-tk_bought')
-    price_root = soup.select_one('#corePriceDisplay_desktop_feature_div, #corePrice_feature_div')
+    price_root = soup.select_one('#corePriceDisplay_desktop_feature_div') or soup.select_one('#corePrice_feature_div')
     def amount(node):
         if node is None:
             return None

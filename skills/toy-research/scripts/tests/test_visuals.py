@@ -8,6 +8,15 @@ from report import render
 
 
 class VisualReportTests(unittest.TestCase):
+    def test_keywords_are_not_truncated_and_duplicates_count_once(self):
+        terms=[{'en':f'term {i}','zh':f'词{i}','category':'play'} for i in range(35)]
+        result=dashboard([{'id':'a','title':'Toy','keywords':terms+[terms[0]]}])
+        self.assertIn('35 个归一化关键词',result)
+        self.assertIn('35 次商品关联',result)
+        self.assertIn('data-keyword="term 34"',result)
+        self.assertIn('词0 · 1',result)
+        self.assertIn('100.0%',result)
+
     def test_price_median_uses_known_usd_and_terms_count_products(self):
         items = [{'id':str(i),'title':'Building Toy','brand':'Example',
                   'pricing':{'current_price':price,'currency':currency},

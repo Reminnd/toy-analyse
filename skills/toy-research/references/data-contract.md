@@ -35,6 +35,8 @@
 
 ## 详情补充字段
 
+标题关键词 `keywords` 为一商品多词，每项含 `en`、`zh`、`category`。维度为 product_type（品类）、play（玩法）、feature（特征）、material（材质）、use_case（场景/用途）、audience（人群）、theme（主题）、ip（IP）。先由Codex逐标题语义提取及统一同义词，再按去重ASIN计数；商品覆盖率分母为本次全部去重商品数，不因关键词缺失缩小。旧输入无category时展示为其他。报告展示全量词表与维度词云，不截取前24项作为全部结果。
+
 `pricing` 包含 `current_price`、`reference_price`、`currency`、`currency_symbol`、`reference_label`、`source`、`discount_percent`。未观察到的值为null；参考价未必是原价，以原标签为准。当前售价不能直接称活动价。仅参考价大于当前价时计算 `(reference_price-current_price)/reference_price*100`。USD价格分布只统计USD样本，不跨币种混算，不将单价解释为订单客单价。
 
 `gallery` 是 `{url,image_role,asin,scope:"selected_asin",source}` 数组，`image_role` 为 MAIN/PT01 等图片位置。只接受当前详情ASIN及主图资产匹配的图集，缺失时为空数组；不代表卖家内部SKU或全部变体。`gallery_status` 为 embedded_initial 或 not_observed。报告可保存 `expanded_at`，区分详情刷新时间与榜单原始时间。

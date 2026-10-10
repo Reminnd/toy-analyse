@@ -65,6 +65,16 @@ class CrawlerTests(unittest.TestCase):
         self.assertEqual(result['reviews'][0]['text'],'Not durable')
         with self.assertRaises(ValueError): parse_detail(html,'https://www.amazon.com','B000000002')
 
+    def test_display_price_takes_priority_over_earlier_compact_price(self):
+        html='''<input id="ASIN" value="B000000001"><span id="productTitle">Toy</span>
+        <div id="corePrice_feature_div"><span class="priceToPay"><span class="a-price-symbol">$</span><span class="a-price-whole">4</span><span class="a-price-fraction">89</span></span></div>
+        <div id="corePriceDisplay_desktop_feature_div"><span class="priceToPay"><span class="a-price-symbol">$</span><span class="a-price-whole">4</span><span class="a-price-fraction">89</span></span><span class="basisPrice">List Price: <span class="a-text-price"><span class="a-offscreen">$9.99</span></span></span></div>
+        <div id="recommendations"><span class="basisPrice"><span class="a-text-price"><span class="a-offscreen">$99.99</span></span></span></div>'''
+        price=parse_detail(html,'https://www.amazon.com/dp/B000000001','B000000001')['pricing']
+        self.assertEqual(price['current_price'],4.89)
+        self.assertEqual(price['reference_price'],9.99)
+        self.assertEqual(price['discount_percent'],51.05)
+
     def test_snapshot_skips_expired_and_unrelated_cookies_and_respects_path(self):
         state={'cookies':[
             {'name':'session','value':'test-session','domain':'.example.com','path':'/private','secure':True,'expires':time.time()+1000},

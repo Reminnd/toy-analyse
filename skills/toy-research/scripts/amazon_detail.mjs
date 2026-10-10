@@ -56,7 +56,7 @@ export function readAmazonDetail(productId) {
     }
   }
   const feature_bullets=[...new Set([...document.querySelectorAll('#feature-bullets li .a-list-item')].map(text).filter(Boolean))];
-  const priceRoot=document.querySelector('#corePriceDisplay_desktop_feature_div, #corePrice_feature_div');
+  const priceRoot=document.querySelector('#corePriceDisplay_desktop_feature_div') || document.querySelector('#corePrice_feature_div');
   function amount(node) {
     if (!node) return null;
     const whole=node.querySelector('.a-price-whole'), fraction=node.querySelector('.a-price-fraction');
