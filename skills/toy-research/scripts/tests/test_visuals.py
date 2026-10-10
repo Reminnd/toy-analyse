@@ -4,10 +4,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from report_visuals import dashboard
-from report import render, sales_display
+from report import render, sales_display, monthly_sales_value
 
 
 class VisualReportTests(unittest.TestCase):
+    def test_monthly_sales_sort_does_not_mix_windows_or_missing(self):
+        self.assertEqual(monthly_sales_value('1.5K+ bought in past month'),1500)
+        self.assertEqual(monthly_sales_value('700+ bought in past month'),700)
+        self.assertEqual(monthly_sales_value('2K+ bought in past week'),'')
+        self.assertEqual(monthly_sales_value(None),'')
+
     def test_sales_display_preserves_lower_bound_and_source_period(self):
         self.assertEqual(sales_display('7K+ bought in past month'),'7K+（月）')
         self.assertEqual(sales_display('200+ bought in past week'),'200+（周）')

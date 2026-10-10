@@ -18,6 +18,13 @@ def sales_display(message):
     return f'{message}（周期未识别）'
 
 
+def monthly_sales_value(message):
+    match = re.fullmatch(r'([\d,.]+)\s*([KMB]?)\+?\s+bought in (?:the )?past month', (message or '').strip(), re.I)
+    if not match:
+        return ''
+    return float(match[1].replace(',','')) * {'':1,'K':1000,'M':1000000,'B':1000000000}[match[2].upper()]
+
+
 def esc(value):
     return html.escape(str(value if value is not None else "缺失"), quote=True)
 
@@ -111,7 +118,7 @@ def render(data):
         keywords = '<br>'.join(f'{esc(k.get("en"))} / {esc(k.get("zh"))}' if isinstance(k, dict) else f'{esc(k)} / 翻译缺失' for k in p.get('keywords', []))
         rankings = '<br>'.join(f'{esc(item.get("source"))} · 排名 {esc(item.get("rank"))}' for item in p.get('source_ranks', [{'source': p.get('source'), 'rank': p.get('rank')}]))
         keyword_data = esc(json.dumps([k['en'] for k in p.get('keywords',[]) if isinstance(k,dict)]))
-        cards.append(f'<tr data-product data-keywords="{keyword_data}"><td>{picture}<small>{esc(p.get("image_scope"))}</small></td><td>{link(p.get("url"),p["title"])}<small>{esc(p["id"])}<br>{rankings}</small>{detail_information(p)}</td><td>{esc(p.get("brand"))}</td><td>{esc(p.get("rating"))}<small>评分数 {esc(p.get("rating_count"))}<br>文字评价数 {esc(p.get("review_count"))}</small></td><td>{price_cell}</td><td>{sales}</td><td>{keywords}<small>{esc(p.get("missing_reason",""))}</small></td></tr>')
+        cards.append(f'<tr data-product data-sales="{monthly_sales_value(p.get("displayed_sales_message"))}" data-rating="{esc(p.get("rating") if p.get("rating") is not None else "")}" data-keywords="{keyword_data}"><td>{picture}<small>{esc(p.get("image_scope"))}</small></td><td>{link(p.get("url"),p["title"])}<small>{esc(p["id"])}<br>{rankings}</small>{detail_information(p)}</td><td>{esc(p.get("brand"))}</td><td>{esc(p.get("rating"))}<small>评分数 {esc(p.get("rating_count"))}<br>文字评价数 {esc(p.get("review_count"))}</small></td><td>{price_cell}</td><td>{sales}</td><td>{keywords}<small>{esc(p.get("missing_reason",""))}</small></td></tr>')
     recommendations = ''.join(f'<article><h3>{esc(o["title"])}</h3><p>{esc(o["reason"])}</p><small>商品依据：{esc(", ".join(o["product_ids"]))}</small></article>' for o in data.get("opportunities", []))
     review_rows = ''.join(f'<tr><td>{esc(r["id"])}<small>{esc(r["product_id"])}</small></td><td>{esc(r["text"])}<small>{"原文摘录" if r.get("is_excerpt") else "原文"} · {esc(r.get("sampling",""))}</small></td><td>{esc(r.get("rating"))}</td><td>{link(r.get("url"),r.get("date") or "原始评论")}</td></tr>' for r in reviews)
 
@@ -123,7 +130,7 @@ def render(data):
 <section><h2>AI 选品分析</h2><p>{esc(data.get("summary","未生成分析"))}</p>{recommendations}</section>
 <section><h2>评论洞察与词云</h2><div class="pair"><div><h3>正面主题</h3>{cloud(data.get("positive",[]),len(reviews))}</div><div class="negative"><h3>负面主题</h3>{cloud(data.get("negative",[]),len(reviews))}</div></div></section>
 
-<section><h2>商品明细</h2><input id="product-search" class="search-box" placeholder="筛选标题、品牌或中英文关键词" aria-label="筛选商品"><div class="scroll"><table id="product-table"><tr><th>图片</th><th>商品</th><th>品牌</th><th>评分</th><th>当前售价 / 参考价</th><th>销量</th><th>关键词（English / 中文）与缺失说明</th></tr>{''.join(cards)}</table></div></section>
+<section><h2>商品明细</h2><div class="sort-controls"><label for="product-sort">商品排序 </label><select id="product-sort"><option value="original">原始榜单顺序</option><option value="sales-desc">销量（月）从高到低</option><option value="sales-asc">销量（月）从低到高</option><option value="rating-desc">评分从高到低</option><option value="rating-asc">评分从低到高</option></select><small>销量按来源显示数量的下界排序，保留“+”；缺失值排最后，不混算不同周期。</small></div><input id="product-search" class="search-box" placeholder="筛选标题、品牌或中英文关键词" aria-label="筛选商品"><div class="scroll"><table id="product-table"><tr><th>图片</th><th>商品</th><th>品牌</th><th>评分</th><th>当前售价 / 参考价</th><th>销量</th><th>关键词（English / 中文）与缺失说明</th></tr>{''.join(cards)}</table></div></section>
 <section><h2>评论证据</h2><div class="scroll"><table><tr><th>评论与商品 ID</th><th>原文</th><th>星级</th><th>来源</th></tr>{review_rows}</table></div></section></main>{INTERACTION}</body></html>'''
 
 

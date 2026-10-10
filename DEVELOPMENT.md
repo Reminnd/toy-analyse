@@ -1,5 +1,7 @@
 # 二次开发交接
 
+当前交付格式为HTML和JSON。商品明细新增销量（月）及评分升降序排序，可恢复原始榜单顺序；缺失值始终置后，销量按来源数量下界排序，周/日等其他窗口不混入月销量排序。排序与关键词筛选兼容。28项Python测试和本地Chrome排序检查通过。
+
 报告样式更新：白橙电商配色，当前价和参考价分别标在对应柱体右端。商品表“销量”采用数量与周期短标记，保留来源原文供悬停查看；不换算精确销量。27项Python测试通过，桌面与390px手机布局已验证138个价格标签及195个销量单元格。
 
 本包为 Codex skill/plugin。当前仅启用美国 Amazon Toys & Games 的 Best Sellers 与 New Releases；Python 优先，Playwright 备用，分析和中英文关键词由 Codex 生成。入口是 `skills/toy-research/SKILL.md`。
