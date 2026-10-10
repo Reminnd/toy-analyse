@@ -2,7 +2,7 @@
 
 客户初始化包支持 Amazon 国家与大小类选择、Codex 本机设置窗口与 ChatGPT MCP Apps 表单、可选 Codex 原生每日计划，以及可排序的 HTML 选品报告。国家与类目首次读取平台并缓存，后续由用户主动更新。包内不含个人账号、cookies、配置、历史报告或已启用计划。
 
-- [下载客户初始化 ZIP](releases/product-research-client.zip)
+- [下载客户初始化 ZIP](releases/product-research-client-v1.1.4.zip)
 - [客户安装与使用](product-research/README.md)
 - [Product Research Skill](product-research/skills/product-research/SKILL.md)
 
