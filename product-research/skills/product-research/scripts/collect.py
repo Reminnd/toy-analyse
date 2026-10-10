@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import subprocess
 import sys
+import os
 
 from python_crawler import crawl
 from settings import execute
@@ -27,7 +28,7 @@ def collect_python(source, config, state, output, config_path):
     previous = output.with_name(output.stem + '-before-verification.json')
     previous.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding='utf-8')
     session = Path(config_path).parent / 'work/.auth' / ('amazon-' + config['country'] + '-verified.json')
-    command = ['node', str(Path(__file__).with_name('verify_session.mjs')), '--url', stop.get('url') or source['url'],
+    command = [os.environ.get('PRODUCT_RESEARCH_NODE') or 'node', str(Path(__file__).with_name('verify_session.mjs')), '--url', stop.get('url') or source['url'],
                '--output', str(session)]
     if state:
         command += ['--storage-state', str(state)]
@@ -76,7 +77,7 @@ def main():
         if result.get('collection_stop'):
             return 2
     else:
-        command = ['node', str(Path(__file__).with_name('playwright_crawler.mjs')), '--platform', 'amazon',
+        command = [os.environ.get('PRODUCT_RESEARCH_NODE') or 'node', str(Path(__file__).with_name('playwright_crawler.mjs')), '--platform', 'amazon',
                    '--country', config['country'], '--url', source['url'], '--limit', str(source['target']),
                    '--details', '--output', str(output), '--profile', str(workspace / 'work/browser'),
                    '--expected-origin', config['marketplace']['origin'], '--expected-category', plan['category_path'][-1]['key']]

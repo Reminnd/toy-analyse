@@ -17,7 +17,7 @@ let queue = Promise.resolve();
 
 export function settings(action, values, workspace) {
   const run = () => new Promise((resolve, reject) => {
-    const child = spawn(process.env.PRODUCT_RESEARCH_PYTHON || 'python',
+    const child = spawn(process.env.PRODUCT_RESEARCH_PYTHON || (process.platform === 'win32' ? 'python' : 'python3'),
       ['-X', 'utf8', path.join(scripts, 'settings.py'), '--workspace', workspace, '--action', action],
       {stdio: ['pipe', 'pipe', 'pipe'], windowsHide: true});
     let output = '', error = '';

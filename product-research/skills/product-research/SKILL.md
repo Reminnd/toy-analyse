@@ -13,7 +13,7 @@ description: 启动 Product Research，通过本机设置窗口或 ChatGPT HTML 
 python scripts/start.py --workspace <absolute-workspace> --timezone <client-timezone>
 ```
 
-使用实际安装的 Python；保持进程运行，让用户操作窗口。不要使用聊天内长列表、分页问答或 HTML 面板替代设置窗口。窗口提供国家下拉、大小类级联下拉、运行时间、时区及文件夹选择器。每级下拉包含上级类目自身（“全部”）与直接子类。选项首次从 Amazon 读取并缓存，显式更新才刷新。
+macOS 首先阅读 [references/macos.md](references/macos.md)，使用安装目录 `.venv/bin/python`（缺少时按文档安装）；Windows 使用实际安装的 Python。保持进程运行，让用户操作窗口。不要使用聊天内长列表、分页问答或 HTML 面板替代设置窗口。窗口提供国家下拉、大小类级联下拉、运行时间、时区及文件夹选择器。每级下拉包含上级类目自身（“全部”）与直接子类。选项首次从 Amazon 读取并缓存，显式更新才刷新。
 
 启动后保持当前任务执行，使用进程等待工具轮询（单次不超过 60 秒），不要发 final 结束等待，也不要让用户再次发送“继续”。start.py 在窗口 saved=true 后自动串行采集两榜；它返回 ready_for_analysis 后，助手立即完成去重、关键词/评论分析及 HTML 报告。collection_stopped 时读取已保存结果，说明具体阻塞，不冒充采集完成。取消或关闭窗口不保存、不启动采集、不创建计划。不要把旧配置或预选项当成本次已提交。自动定时执行直接读取已有配置，不弹窗口。
 

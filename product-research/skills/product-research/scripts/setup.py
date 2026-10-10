@@ -3,6 +3,7 @@ import argparse
 import json
 import queue
 import threading
+import sys
 from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
@@ -31,17 +32,26 @@ class SetupWindow:
         root.minsize(800, 550)
         root.configure(bg='#fff8f2')
         style = ttk.Style(root)
-        style.theme_use('clam')
+        style.theme_use('aqua' if sys.platform == 'darwin' else 'clam')
+        font_family = 'PingFang SC' if sys.platform == 'darwin' else 'Microsoft YaHei UI'
         style.configure('TFrame', background='#fff8f2')
-        style.configure('TLabel', background='#fff8f2', font=('Microsoft YaHei UI', 10))
-        style.configure('TCheckbutton', background='#fff8f2', font=('Microsoft YaHei UI', 10))
-        style.configure('Title.TLabel', foreground='#bd4c08', font=('Microsoft YaHei UI', 20, 'bold'))
+        style.configure('TLabel', background='#fff8f2', font=(font_family, 10))
+        style.configure('TCheckbutton', background='#fff8f2', font=(font_family, 10))
+        style.configure('Title.TLabel', foreground='#bd4c08', font=(font_family, 20, 'bold'))
         style.configure('Accent.TButton', foreground='white', background='#ef711b', padding=8)
         canvas = tk.Canvas(root, background='#fff8f2', highlightthickness=0)
         scrollbar = ttk.Scrollbar(root, orient='vertical', command=canvas.yview)
         scrollbar.pack(side='right', fill='y')
         canvas.pack(side='left', fill='both', expand=True)
         canvas.configure(yscrollcommand=scrollbar.set)
+        def scroll(event):
+            # Leave dropdown and entry gestures to their native controls.
+            if event.widget.winfo_class() not in ('Canvas', 'TFrame', 'TLabel'):
+                return
+            steps = -event.delta if sys.platform == 'darwin' else -int(event.delta / 120)
+            if steps:
+                canvas.yview_scroll(int(steps), 'units')
+        root.bind('<MouseWheel>', scroll, add=True)
         frame = ttk.Frame(canvas, padding=24)
         frame_id = canvas.create_window((0, 0), window=frame, anchor='nw')
         frame.bind('<Configure>', lambda _: canvas.configure(scrollregion=canvas.bbox('all')))

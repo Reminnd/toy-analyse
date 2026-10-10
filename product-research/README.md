@@ -10,6 +10,10 @@ Amazon 国家与大小类选择、Python 优先 / Playwright 补充采集，以�
 
 环境：Python 3.12+（含 Tkinter）、Node.js 20+；需要浏览器或 ChatGPT 组件时，在 scripts 目录运行 `npm ci`。浏览器采集默认 Chrome，也可使用 Playwright Chromium。
 
+## macOS 安装
+
+已添加 macOS 原生窗口主题、中文字体和触控板滚动；MCP 服务在 macOS 默认使用 python3。Apple Silicon 与 Intel Mac 均需安装各自架构的 Python、Node.js 与 Chrome。详细安装和启动步骤见 [macOS 使用说明](skills/product-research/references/macos.md)。当前已完成 Windows 回归测试，macOS 实机验收尚未执行。
+
 ## ChatGPT 官方网页内嵌设置
 
 包内包含 MCP Apps HTML 表单和 MCP 服务。真正嵌入官方聊天需要先连接该服务，仅上传 ZIP 或 HTML 文件不会自动启用组件。
