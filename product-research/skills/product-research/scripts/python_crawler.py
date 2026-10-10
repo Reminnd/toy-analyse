@@ -3,6 +3,8 @@ import argparse
 import json
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor
+from threading import local
 from datetime import datetime, timezone
 from urllib.parse import urljoin, urlparse
 
@@ -123,8 +125,10 @@ def parse_page(html, url, platform, country):
     }
 
 
-def crawl(url, platform, country, limit=200, details=False, storage_state=None, scope=None):
+def crawl(url, platform, country, limit=200, details=False, storage_state=None, scope=None, detail_cache=None, workers=1):
     source_url = url
+    detail_cache = detail_cache if detail_cache is not None else {}
+    workers = max(1, min(2, workers))
     if platform not in ("amazon", "temu", "tiktok", "aliexpress"):
         raise ValueError("此 Python 爬虫尚未适配该平台")
     products, seen, visited = [], set(), set()
@@ -137,6 +141,26 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None, 
     session.mount("http://", HTTPAdapter(max_retries=retry))
     session.headers.update({"User-Agent": "Mozilla/5.0", "Accept-Language": "en-US,en;q=0.9"})
     auth = load_state(session, storage_state, url) if storage_state else None
+    thread_state = local()
+    def read_detail(product, client=None):
+        key = f"{platform}:{country}:{product['product_id']}"
+        if key in detail_cache:
+            return detail_cache[key]
+        if client is None:
+            if not hasattr(thread_state, 'session'):
+                thread_state.session = requests.Session()
+                thread_state.session.mount('https://', HTTPAdapter(max_retries=retry))
+                thread_state.session.headers.update(session.headers)
+                thread_state.session.cookies.update(session.cookies)
+            client = thread_state.session
+        response = client.get(product['product_url'], timeout=40)
+        response.raise_for_status()
+        if scope and urlparse(response.url).hostname != urlparse(scope['market']['origin']).hostname:
+            raise ValueError('详情页跳转到其他国家；不合并该详情。')
+        detail = parse_detail(response.text, response.url, product['product_id'])
+        detail['detail_collected_at'] = datetime.now(timezone.utc).isoformat()
+        detail_cache[key] = detail
+        return detail
     while url and url not in visited and len(products) < limit and len(visited) < 20:
         visited.add(url)
         try:
@@ -173,11 +197,7 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None, 
                     continue
                 try:
                     print('补齐内嵌榜单商品 '+key,file=sys.stderr)
-                    detail_response = session.get(product['product_url'],timeout=40)
-                    detail_response.raise_for_status()
-                    if scope and urlparse(detail_response.url).hostname != urlparse(scope['market']['origin']).hostname:
-                        raise ValueError('详情页跳转到其他国家；不合并该详情。')
-                    product.update(parse_detail(detail_response.text,detail_response.url,key))
+                    product.update(read_detail(product, session))
                 except (ValueError, requests.RequestException) as error:
                     unresolved.append({**product, 'error':str(error)})
                     if isinstance(error, AmazonVerificationRequired):
@@ -195,22 +215,23 @@ def crawl(url, platform, country, limit=200, details=False, storage_state=None, 
         raise ValueError("HTTP 页面未取得商品；可能需要 JavaScript、登录或页面适配，可改用 Playwright")
     products = products[:limit]
     if details and platform == 'amazon' and not collection_stop:
-        for product in products:
-            if product.get('detail_source'):
-                continue
-            try:
-                response = session.get(product['product_url'], timeout=40)
-                response.raise_for_status()
-                if scope and urlparse(response.url).hostname != urlparse(scope['market']['origin']).hostname:
-                    raise ValueError('详情页跳转到其他国家；不合并该详情。')
-                detail = parse_detail(response.text, response.url, product['product_id'])
-                product.update({key:value for key,value in detail.items() if value is not None})
-                product['detail_missing'] = [key for key in ['brand','listed_at','reviews'] if not detail.get(key)]
-            except (ValueError, requests.RequestException) as error:
-                product['detail_error'] = str(error)
-                if isinstance(error, AmazonVerificationRequired):
-                    collection_stop={'phase':'detail','product_id':product['product_id'],
-                                     'url':product['product_url'],'code':error.code,'reason':str(error)}
+        pending = [product for product in products if not product.get('detail_source')]
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            for offset in range(0, len(pending), workers):
+                batch = pending[offset:offset + workers]
+                futures = [executor.submit(read_detail, product, session if workers == 1 else None) for product in batch]
+                for index, (product, future) in enumerate(zip(batch, futures), offset + 1):
+                    try:
+                        detail = future.result()
+                        product.update({key:value for key,value in detail.items() if value is not None})
+                        product['detail_missing'] = [key for key in ['brand','listed_at','reviews'] if not detail.get(key)]
+                    except (ValueError, requests.RequestException) as error:
+                        product['detail_error'] = str(error)
+                        if isinstance(error, AmazonVerificationRequired):
+                            collection_stop={'phase':'detail','product_id':product['product_id'],
+                                             'url':product['product_url'],'code':error.code,'reason':str(error)}
+                    print(f"详情 {index}/{len(pending)} {product['product_id']}", file=sys.stderr, flush=True)
+                if collection_stop:
                     break
     if collection_stop:
         for product in products:

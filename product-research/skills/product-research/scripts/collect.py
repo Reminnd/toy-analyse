@@ -10,10 +10,16 @@ from python_crawler import crawl
 from settings import execute
 
 
-def collect_python(source, config, state, output, config_path):
+def collect_python(source, config, state, output, config_path, cache_path=None):
     scope = {'market': config['marketplace'], 'category': config['category_path'][-1], 'list': source['list']}
+    cache = json.loads(cache_path.read_text(encoding='utf-8')) if cache_path and cache_path.exists() else {}
     def fetch(session):
-        return crawl(source['url'], 'amazon', config['country'], source['target'], True, session, scope=scope)
+        try:
+            return crawl(source['url'], 'amazon', config['country'], source['target'], True, session,
+                         scope=scope, detail_cache=cache, workers=2)
+        finally:
+            if cache_path:
+                cache_path.write_text(json.dumps(cache, ensure_ascii=False), encoding='utf-8')
     try:
         result = fetch(state)
     except ValueError as error:
@@ -61,6 +67,7 @@ def main():
     parser.add_argument('--engine', choices=['python', 'playwright'], default='python')
     parser.add_argument('--output', required=True)
     parser.add_argument('--python-result')
+    parser.add_argument('--detail-cache', help='Shared only within one collection run')
     args = parser.parse_args()
     workspace = Path(args.workspace).resolve()
     plan = execute('plan', {}, workspace)
@@ -72,7 +79,7 @@ def main():
     output = Path(args.output).resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
     if args.engine == 'python':
-        result = collect_python(source, config, state, output, plan['config_path'])
+        result = collect_python(source, config, state, output, plan['config_path'], Path(args.detail_cache) if args.detail_cache else None)
         print(json.dumps({'output': str(output), 'count': len(result['products'])}))
         if result.get('collection_stop'):
             return 2
@@ -90,4 +97,5 @@ def main():
 
 if __name__ == '__main__':
     sys.stdout.reconfigure(encoding='utf-8')
+    sys.stderr.reconfigure(encoding='utf-8')
     raise SystemExit(main())

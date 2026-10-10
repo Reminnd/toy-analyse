@@ -22,7 +22,7 @@ def start(workspace, timezone):
     for source in ('best_sellers', 'new_releases'):
         output = run / (source + '.json')
         collected = subprocess.run([sys.executable, str(scripts / 'collect.py'), '--workspace', str(workspace),
-                                    '--source', source, '--output', str(output)])
+                                    '--source', source, '--output', str(output), '--detail-cache', str(run/'details.json')])
         outputs.append({'source': source, 'output': str(output), 'returncode': collected.returncode})
         if collected.returncode != 0:
             return {'saved': True, 'status': 'collection_stopped', 'outputs': outputs}
