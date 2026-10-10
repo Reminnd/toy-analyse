@@ -1,19 +1,25 @@
 ---
 name: product-research
-description: 启动 Product Research，通过 Codex 原生聊天选择或 ChatGPT HTML 表单配置国家、品类、定时与保存位置；使用 Python 优先、Playwright 补充采集 Amazon 热销与新品榜单，分析价格、品牌、双语关键词、销量及评论，生成可排序的 HTML 选品报告。
+description: 启动 Product Research，通过本机设置窗口或 ChatGPT HTML 表单配置国家、品类、定时与保存位置；使用 Python 优先、Playwright 补充采集 Amazon 热销与新品榜单，分析价格、品牌、双语关键词、销量及评论，生成可排序的 HTML 选品报告。
 ---
 
 # Product Research
 
-## 聊天内启动设置
+## 启动设置窗口
 
-用户明确启动 Product Research 或要求修改研究范围时，先阅读 [references/chat-setup.md](references/chat-setup.md)。Codex 使用当前宿主的原生用户输入工具展示选择与填写；ChatGPT 官方网页使用已连接 MCP Apps 服务的 HTML 内嵌表单。不要再打开独立桌面设置窗口。自动定时执行只读取已有配置，不弹设置。
+用户明确启动或修改设置时，Codex 打开独立桌面窗口：
 
-两端共用 scripts/settings.py：markets 获取国家，categories 获取该国家/父类下的实际类目，save 校验并保存用户已提交的回答，plan 验证用于采集的最终来源。国家、类目首次读取 Amazon 并缓存到工作目录，之后只按用户明确要求更新。大类和每级子类的选择列表都同时包含该类自身和直接下级。未选择/取消不保存、不创建计划、不启动采集。
+```text
+python scripts/setup.py --workspace <absolute-workspace> --timezone <client-timezone>
+```
 
-选择国家绑定实际站点域名，选择类目绑定该站点分类树的 key、url 和路径。用户换国家必须重选类目。热销与新品链接从最终选择派生，不能沿用旧国家/大类链接；自定义两榜链接也必须通过相同范围校验。首次真实访问还需检查最终 URL、榜单类型、页面标题及配送地区。没有原生 UI 或 MCP 连接时说明具体限制，不把 HTML 文件或独立窗口冒充聊天内组件。
+使用实际安装的 Python；保持进程运行，让用户操作窗口。不要使用聊天内长列表、分页问答或 HTML 面板替代设置窗口。窗口提供国家下拉、大小类级联下拉、运行时间、时区及文件夹选择器。每级下拉包含上级类目自身（“全部”）与直接子类。选项首次从 Amazon 读取并缓存，显式更新才刷新。
 
-配置与缓存保存于当前任务目录，不复制到客户包。环境需要 Python 3.12+ 与 scripts/requirements.txt；浏览器及 MCP 服务需要 scripts/package.json 中的依赖。ChatGPT MCP 服务只保存设置，不自建定时任务；真实网页接入需要客户自己的 HTTPS 地址与连接权限。
+等待窗口退出的 JSON 结果。saved=true 才读取配置继续采集；取消或关闭窗口不保存、不启动采集、不创建计划。不要把旧配置或预选项当成本次已提交。自动定时执行直接读取已有配置，不弹窗口。
+
+窗口通过 scripts/settings.py 校验并保存。国家绑定真实域名，类目绑定真实分类路径；自定义链接必须匹配国家、类目和榜单类型。首次访问核对页面及配送地区。缓存、配置、会话和报告仅保存于工作目录，不打包分发。
+
+ChatGPT 官方网页仍使用已连接的 MCP Apps HTML 表单，连接要求见 [references/chat-setup.md](references/chat-setup.md)。网页服务不创建自己的 scheduler。
 
 ## 保存后的执行与计划
 

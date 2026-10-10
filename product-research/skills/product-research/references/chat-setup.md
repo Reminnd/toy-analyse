@@ -1,29 +1,8 @@
-# 聊天内设置
+# 设置入口
 
-## Codex：原生选择与填写
+## Codex：独立设置窗口
 
-检测当前会话实际可用的用户输入工具。优先使用 `request_user_input_async` 的 options 展示国家/类目选择，省略 options 提供文本填写；若只有 `request_user_input` 则遵循其当前模式和 schema 的限制，不强行在不支持的模式调用。没有原生输入工具时才直接在聊天中询问。不要启动 Tkinter、独立浏览器表单或终端问答代替 Codex 聊天。
-
-原生工具不是 HTML select，不能声称已经实现自定义下拉组件；使用宿主实际渲染的选项卡/文本回答。按依赖顺序分步显示：
-
-1. 显示“平台：Amazon”。读取 markets 的实际选项，用国家名称及 country code 构造 options。列表过长时按宿主支持的数量分页，提供“下一组选项”，不能隐藏未列国家或伪造选项。用户可直接填已返回的国家名称或代码。
-2. 用户选国家后首次调用 categories（category_keys=[]），加载该市场大类。展示大类选项；国家改变时清除已选类目和旧链接。
-3. 选大类后 categories(category_keys=[大类key]) 返回的 choices 包含大类自身 `is_self=true` 和实际直接子类。自身标签使用“类目名称（该类自身）”，不能只有子类而漏掉大类。用户选子类后继续加载它自身和下级，直到选自身或已无下级；不要用父节点自动代替用户已选子节点。
-4. 原生选择是否启用每日计划；启用时填写 HH:MM 和时区。输入保存目录（可选默认 outputs），根据宿主实际可用的文件保存/选择工具展示目录选择；无该工具时使用文本框，不虚构按钮。已有回答可预填，但启动设置不代表用户授权默认提交。
-5. 将用户回答写为工作目录中的 draft-settings.json，调用 save；后台校验成功才算保存。随后调用 plan，使用返回来源启动采集，并按 schedule_enabled 处理原生计划。无需再询问同一项是否确定。
-
-命令（输入文件 `{}` 可用于首次 markets；不要依赖交互式 stdin）：
-
-```text
-python scripts/settings.py --workspace <workspace> --action markets --input <empty.json>
-python scripts/settings.py --workspace <workspace> --action categories --input <selection.json>
-python scripts/settings.py --workspace <workspace> --action save --input <draft-settings.json>
-python scripts/settings.py --workspace <workspace> --action plan --input <empty.json>
-```
-
-selection.json 为 `{"country":"<observed country code>","category_keys":["<observed parent key>"]}`，根类目使用空数组。显式更新时传 `refresh:true`；未提供时缓存存在则不刷新。第一次访问一个节点会读取该节点下级，不一次递归抓取整站。返回 source/fetched_at 可用来说明选项来源。
-
-draft-settings.json 使用 country、category_keys、schedule_enabled（布尔值）、time、timezone、output_directory（null 为默认，路径为运行环境中的目录），可选 custom_sources（依序热销榜/新品榜两个 URL）。custom_sources 必须匹配所选国家及最终类目；若用户确实要换类目，先更新选择，不沿用旧链接。
+使用 SKILL.md 中的 scripts/setup.py 打开本机窗口。国家和大小类通过可滚动下拉选择，保存目录通过文件夹选择器选择。仅在 saved=true 后执行采集。已撤回聊天内原生长列表和分页选择流程。窗口与网页仍共用 settings.py 的范围校验及配置保存。
 
 ## ChatGPT 官方网页：HTML 组件
 

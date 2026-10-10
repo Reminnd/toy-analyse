@@ -1,4 +1,4 @@
 interface:
   display_name: "Product Research"
   short_description: "选择国家与商品类目，采集 Amazon 榜单并生成可排序的 HTML 选品分析报告"
-  default_prompt: "使用 $product-research 启动 Product Research，在聊天内选择研究设置。"
+  default_prompt: "使用 $product-research 启动 Product Research，打开本机设置窗口选择研究设置。"
